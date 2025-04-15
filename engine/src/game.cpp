@@ -10,8 +10,10 @@
 #include "fish/material.hpp"
 #include "fish/mesh.hpp"
 #include "fish/renderer.hpp"
+#include "fish/transform.hpp"
 #include "glad/gl.h"
 #include <chrono>
+
 void glfwErrorCallback(int code, const char* msg)
 {
     std::cout << std::format("GLFW error {} caught: {}", code, msg) << std::endl;
@@ -37,7 +39,7 @@ namespace fish
         // init engine-related things
         this->initWindow();
 
-        this->world->addSystem<Renderer, Assets&>(this->assets);
+        this->world->addSystem<Renderer, Assets&, GLFWwindow*>(this->assets, this->window);
         // start loop
         glfwSwapInterval(1);
         glfwShowWindow(window);
@@ -59,6 +61,10 @@ namespace fish
         });
         registry->emplace<Material>(ent, Material {
             .shader = "TestShader"
+        });
+
+        registry->emplace<Transform>(ent, Transform {
+            .position = { 0, 25, 0 }
         });
         
         while (!glfwWindowShouldClose(window))

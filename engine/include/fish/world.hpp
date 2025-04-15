@@ -18,7 +18,7 @@ namespace fish
         std::weak_ptr<entt::registry> getRegistry();
 
         template <typename SystemType, typename... Args>
-        void addSystem(const Args&&... args)
+        void addSystem(const Args... args)
         {
             static_assert(std::is_base_of<ISystem, SystemType>(), "Systems must be derived from ISystem");
             

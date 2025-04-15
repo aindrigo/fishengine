@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GLFW/glfw3.h"
 #include "entt/entity/fwd.hpp"
 #include "fish/assets.hpp"
 #include "fish/system.hpp"
@@ -13,7 +14,7 @@ namespace fish
     class Renderer : public ISystem
     {
     public:
-        Renderer(Assets& assets);
+        Renderer(Assets& assets, GLFWwindow* window);
         void init(std::weak_ptr<entt::registry> regPtr) override; 
         void update() override;  
         void shutdown() override;
@@ -42,6 +43,8 @@ namespace fish
             std::unordered_map<std::string, ShaderData> shaders;
         };
 
+        GLFWwindow* window;
+        entt::entity cameraEntity;
         void onMeshCreate(entt::entity entity);
         void onMeshDestroy(entt::entity entity);
         ShaderCache shaderCache;
