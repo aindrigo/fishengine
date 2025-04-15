@@ -1,3 +1,9 @@
 [submodule "vendor/glfw"]
 	path = vendor/glfw
 	url = https://github.com/GLFW/glfw
+[submodule "vendor/entt"]
+	path = vendor/entt
+	url = https://github.com/skypjack/entt
+[submodule "vendor/glm"]
+	path = vendor/glm
+	url = https://github.com/g-truc/glm
