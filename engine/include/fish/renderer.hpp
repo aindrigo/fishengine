@@ -54,7 +54,6 @@ namespace fish
         VertexGPUData rect;
         GLFWwindow* window;
         entt::registry& registry;
-        entt::entity cameraEntity;
         ShaderCache shaderCache;
     };
 }

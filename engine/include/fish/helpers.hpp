@@ -1,9 +1,11 @@
 #pragma once
 
+#include "assimp/matrix4x4.h"
 #include "fish/common.hpp"
 #include "glad/gl.h"
 
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "fish/material.hpp"
@@ -68,6 +70,26 @@ namespace fish::helpers
             strstream << stream.rdbuf();
 
             return strstream.str();
+        }
+    };
+
+    class Math
+    {
+    public:
+        static bool inBounds(glm::vec2 original, std::pair<glm::vec2, glm::vec2> bounds)
+        {
+            return original.x >= bounds.first.x && original.x <= bounds.second.x &&
+                   original.y >= bounds.first.y && original.y <= bounds.second.y;
+                // the symmetry... its beautiful...
+        }
+
+        static glm::mat4 toGLM(aiMatrix4x4& matrix) {
+            glm::mat4 result;
+            result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
+            result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
+            result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
+            result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
+            return result;
         }
     };
 

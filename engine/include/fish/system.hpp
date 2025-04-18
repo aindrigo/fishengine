@@ -10,6 +10,7 @@ namespace fish
 
         virtual void init() {};
         virtual void update() {};
+        virtual void tick() {};
         virtual void shutdown() {};
     };
 }

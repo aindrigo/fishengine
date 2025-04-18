@@ -16,11 +16,7 @@ namespace fish
 #endif
     };
 
-    struct EngineInfo {
-        const float tickRate = 64.0f;
-        float gameTime = 0.0f;
-        float deltaTime = 0.0f;
-    };
+    
 
     class Engine
     {
@@ -38,14 +34,11 @@ namespace fish
         void initWindow();
         
         void doLoop();
-        void doTick();
-
         enum struct EngineState { RUNNING, NOT_RUNNING };
 
         EngineState state = EngineState::NOT_RUNNING;
         Services services;
         GLFWwindow* window;
-        float deltaTime;
 
         const EngineInitData initData;
 

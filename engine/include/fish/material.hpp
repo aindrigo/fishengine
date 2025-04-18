@@ -2,6 +2,7 @@
 
 
 #include "fish/property.hpp"
+#include <unordered_map>
 namespace fish
 {
     struct Color {
@@ -19,5 +20,6 @@ namespace fish
         {}
 
         std::string shader;
+    private:
     };
 }

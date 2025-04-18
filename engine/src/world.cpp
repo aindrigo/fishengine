@@ -31,6 +31,16 @@ namespace fish
             }
     }
 
+    void World::tick()
+    {
+        for (const auto& system : this->systems)
+            try {
+                system->tick();
+            } catch (std::runtime_error& exception) {
+                std::cout << "Error processing system " << system << " tick: " << exception.what() << std::endl;
+            }
+    }
+
     void World::shutdown()
     {
         for (const auto& system : this->systems)

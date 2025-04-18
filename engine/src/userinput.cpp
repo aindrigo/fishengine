@@ -42,6 +42,12 @@ namespace fish
 
     void UserInput::onCursorPosChange(double x, double y)
     {
+        EventData data;
+        data.setProperty("delta", glm::vec2(x - this->cursorX, y - this->cursorY));
+
+        auto& dispatcher = this->services.getService<EventDispatcher>();
+        dispatcher.dispatch("onCursorMove", data);
+
         this->cursorX = x;
         this->cursorY = y;
     }

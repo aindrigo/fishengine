@@ -9,11 +9,14 @@
 #include "fish/assets.hpp"
 #include "fish/common.hpp"
 #include "fish/events.hpp"
+#include "fish/helpers.hpp"
 #include "fish/renderer.hpp"
 #include "fish/scenes.hpp"
 #include "fish/services.hpp"
+#include "fish/ui.hpp"
 #include "fish/userinput.hpp"
 #include "fish/world.hpp"
+#include "fish/engineinfo.hpp"
 #include "glad/gl.h"
 #include <chrono>
 
@@ -57,6 +60,8 @@ namespace fish
      
         auto& world = this->services.addService<World>();
         this->services.addService<Assets>(std::filesystem::current_path() / "assets");
+        this->services.addService<EngineInfo>();
+
         this->services.addServiceData(SceneLoader(services));
         // init libraries
         glfwSetErrorCallback(glfwErrorCallback);
@@ -143,22 +148,24 @@ namespace fish
     void Engine::doLoop()
     {
         auto& world = this->services.getService<World>();
-        auto& engineInfo = this->services.addService<EngineInfo>();
-
+        auto& events = this->services.getService<EventDispatcher>();
+        auto& userInput = this->services.getService<UserInput>();
+        auto& ui = this->services.addServiceData(UI(services));
+        auto& engineInfo = this->services.getService<EngineInfo>();
         float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
-        auto& events = this->services.getService<EventDispatcher>();
+        ui.init();
         events.dispatch("start");
         while (!glfwWindowShouldClose(window))
         {
             std::chrono::high_resolution_clock::time_point begin = std::chrono::high_resolution_clock::now();
-            engineInfo.gameTime += deltaTime;
-
+            engineInfo.gameTime += engineInfo.deltaTime;
+            std::cout << "FPS: " << 1.0f / engineInfo.deltaTime << std::endl;
             // tick
             if (nextTick < engineInfo.gameTime) {
-                doTick();
                 nextTick += tickDelay;
+                world.tick();
             }
 
             // frame logic
@@ -170,12 +177,7 @@ namespace fish
 
             // frame end
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
-            deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000000.0f;
+            engineInfo.deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000000.0f;
         }
-    }
-
-    void Engine::doTick()
-    {
-        SteamAPI_RunCallbacks();
     }
 }

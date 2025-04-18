@@ -1,6 +1,7 @@
 #include "fish/renderer.hpp"
 #include "GLFW/glfw3.h"
 #include "entt/entt.hpp"
+#include "fish/engineinfo.hpp"
 #include "fish/services.hpp"
 #include "fish/transform.hpp"
 #include "fish/world.hpp"
@@ -21,9 +22,12 @@ namespace fish
 
     void Renderer::init()
     {
-        this->cameraEntity = registry.create();
-        registry.emplace<Camera3D>(this->cameraEntity);
+        auto& world = services.getService<World>();
+        auto& engineInfo = services.getService<EngineInfo>();
 
+        engineInfo.camera = world.create();
+        registry.emplace<Camera3D>(engineInfo.camera.value());
+        registry.emplace<Transform3D>(engineInfo.camera.value());
         registry.on_construct<Mesh>().connect<&Renderer::onMeshCreate>(this);
         registry.on_destroy<Mesh>().connect<&Renderer::onMeshDestroy>(this);
         this->createRect();
@@ -50,13 +54,20 @@ namespace fish
 
     void Renderer::render3D(int width, int height)
     {
-        FISH_ASSERT(registry.all_of<Camera3D>(this->cameraEntity), "Camera3D not found on camera entity");
-        Camera3D& camera = registry.get<Camera3D>(cameraEntity);
+        auto& engineInfo = this->services.getService<EngineInfo>();
+        if (!engineInfo.camera.has_value())
+            return;
 
+        auto& cameraEntity = engineInfo.camera.value();
+
+        bool componentsFound = registry.all_of<Camera3D, Transform3D>(cameraEntity);
+        FISH_ASSERT(componentsFound, "Camera3D & Transform3D not found on camera entity");
+
+        auto [camera, cameraTransform]= registry.get<Camera3D, Transform3D>(cameraEntity);
         auto& world = services.getService<World>();
 
         auto group = registry.group<Mesh>(entt::get<VertexGPUData, Material, Transform3D>);
-        glm::mat4 view = camera.transform.build();
+        glm::mat4 view = cameraTransform.build();
         glm::mat4 projection = camera.build(static_cast<float>(width) / static_cast<float>(height));
 
         for (auto const& ent : group) {
@@ -69,7 +80,7 @@ namespace fish
             helpers::Uniform::uniformVec3(
                 shader, 
                 "cameraPosition", 
-                camera.transform.position
+                cameraTransform.position
             );
 
             helpers::Uniform::uniformMatrix4x4(
@@ -81,7 +92,7 @@ namespace fish
             helpers::Uniform::uniformMatrix4x4(
                 shader,
                 "view",
-                camera.transform.build()
+                cameraTransform.build()
             );
             
             helpers::Uniform::uniformMatrix4x4(
@@ -141,7 +152,7 @@ namespace fish
         glm::mat4 ortho = glm::ortho(0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, -1.0f, 1.0f);
 
         for (auto const& ent : group) {
-            auto [transform, material] = group.get(ent);
+            auto [panel, transform, material] = group.get(ent);
 
             Transform2D worldSpace = world.worldSpace2DTransform(ent);
 
@@ -189,14 +200,26 @@ namespace fish
         
         glCreateVertexArrays(1, &data.vao);
 
-        glVertexArrayVertexBuffer(data.vbo, 0, data.vbo, 0, sizeof(Vertex));
+        glVertexArrayVertexBuffer(data.vao, 0, data.vbo, 0, sizeof(Vertex));
         glVertexArrayElementBuffer(data.vao, data.ebo);
 
         glEnableVertexArrayAttrib(data.vao, 0);
+        glEnableVertexArrayAttrib(data.vao, 1);
+        glEnableVertexArrayAttrib(data.vao, 2);
+        glEnableVertexArrayAttrib(data.vao, 3);
+        glEnableVertexArrayAttrib(data.vao, 4);
 
         glVertexArrayAttribFormat(data.vao, 0, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, position));
+        glVertexArrayAttribFormat(data.vao, 1, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, normal));
+        glVertexArrayAttribFormat(data.vao, 2, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, tangent));
+        glVertexArrayAttribFormat(data.vao, 3, 3, GL_FLOAT, GL_FALSE, offsetof(Vertex, bitangent));
+        glVertexArrayAttribFormat(data.vao, 4, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex, uv));
 
         glVertexArrayAttribBinding(data.vao, 0, 0);
+        glVertexArrayAttribBinding(data.vao, 1, 0);
+        glVertexArrayAttribBinding(data.vao, 2, 0);
+        glVertexArrayAttribBinding(data.vao, 3, 0);
+        glVertexArrayAttribBinding(data.vao, 4, 0);
 
         registry.emplace<VertexGPUData>(entity, data);
     }

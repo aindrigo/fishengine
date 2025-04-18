@@ -4,5 +4,6 @@ namespace fish
 {
     void RuntimeSystem::update()
     {
-    }
+
+        }
 }

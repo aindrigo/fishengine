@@ -39,14 +39,16 @@ namespace fish
         Transform2D worldSpace2DTransform(entt::entity entity);
 
         void update();
+        void tick();
         void shutdown();
     
     private:
-        entt::entity root;
         void clearEntityParent(entt::entity entity);
         void moveEntityParent(entt::entity entity, entt::entity parent);
 
         void onEntityDestroy(entt::entity entity);
+
+        entt::entity root;
         std::vector<std::unique_ptr<ISystem>> systems;
         entt::registry registry;
     };

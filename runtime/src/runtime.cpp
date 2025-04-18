@@ -1,13 +1,17 @@
 #include "fish/runtime.hpp"
 #include "fish/engine.hpp"
+#include "fish/engineinfo.hpp"
 #include "fish/events.hpp"
 #include "fish/helpers.hpp"
+#include "fish/scenes.hpp"
 #include "fish/transform.hpp"
 #include "fish/world.hpp"
 #include "fish/runtimesystem.hpp"
+#include "glm/ext/vector_float3.hpp"
 #include "nlohmann/json.hpp" // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include <filesystem>
+#include <optional>
 #include <string>
 
 namespace fish
@@ -64,23 +68,32 @@ namespace fish
 
         events.observe("start", [&](auto& eventData) {
             auto& world = services.getService<World>();
+            auto& loader = services.getService<SceneLoader>();
+            auto& engineInfo = services.getService<EngineInfo>();
+
+            auto& registry = world.getRegistry();
+
+            auto& camera = engineInfo.camera.value();
+            auto& transform = registry.get<Transform3D>(camera);
+
+            transform.eulerAngles.y = 89.5f;
+            transform.position.y = -500.0f;
+            transform.position.z = -900.0f;
+            Scene scene = loader.load("models/sponza.obj");
+            loader.loadIntoWorld(scene);
 
             world.addSystem<RuntimeSystem>();
 
-            auto panel1 = world.createPanel();
-            auto [material1, transform1] = world.getRegistry().get<Material, Transform2D>(panel1);
-            transform1.z = 1;
-            transform1.position = { 100, 100 };
-            transform1.alignment = Transform2D::AlignmentMode::CENTER;
-            
-            auto panel2 = world.createPanel();
-            auto [material2, transform2] = world.getRegistry().get<Material, Transform2D>(panel2);
-            material2.setProperty("color", Color { 155, 155, 155, 200 });
-            transform2.size = { 200, 200};
-            transform2.position = { 0, 0 };
-            transform2.z = 0;
+            // events.observe("onCursorMove", [&](auto& cursorEventData) {
+            //     std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
+            //     if (!deltaOpt.has_value())
+            //         return eventData;
 
-            world.setParent(panel1, panel2);
+            //     glm::vec2 delta = deltaOpt.value() * 0.01f;
+            //     transform.eulerAngles += glm::vec3(delta.y, delta.x, 0);
+            //     return eventData;
+            // });
+            
             return eventData;
         });
         this->engine->start();
