@@ -4,6 +4,8 @@
 #include "fish/material.hpp"
 #include "fish/model.hpp"
 #include "fish/transform.hpp"
+#include "fish/node.hpp"
+#include "fish/common.hpp"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -92,13 +94,13 @@ namespace fish
         entt::entity newEntity = this->registry.create();
         
         auto& node = registry.emplace<Node>(newEntity);
-        setParent(parent);
+        setParent(newEntity, parent);
         return newEntity;
     }
 
     entt::entity World::createPanel()
     {
-        auto ent = this->registry.create();
+        auto ent = this->create();
         registry.emplace<Panel>(ent, Panel {});
         auto& material = registry.emplace<Material>(ent, Material("2D_Panel"));
         auto& transform = registry.emplace<Transform2D>(ent, Transform2D {

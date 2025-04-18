@@ -1,14 +1,9 @@
 #pragma once
 
-#include "entt/entity/entity.hpp"
-#include "entt/entity/fwd.hpp"
-#include "fish/common.hpp"
-#include "fish/world.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
-#include "node.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/euler_angles.hpp"
 
@@ -27,28 +22,6 @@ namespace fish
             matrix *= glm::eulerAngleXYZ(eulerAngles.x, eulerAngles.y, eulerAngles.z);
             matrix = glm::scale(matrix, scale);
             return matrix;
-        }
-
-        glm::mat4 buildWorld(World& world, Node node)
-        {
-            if (node.parent == entt::null)
-                return build();
-
-            glm::mat4 result = build();
-            entt::entity next = node.parent;
-
-            auto& registry = world.getRegistry();
-            while (next != entt::null) {
-                bool hasComponents = registry.all_of<Node, Transform3D>(next);
-                FISH_ASSERT(hasComponents, "Node parent must have Node and Transform3D components");
-                
-                auto [nextNode, transform] = registry.get<Node, Transform3D>(next);
-
-                result *= transform.buildWorld(world, node);
-                next = nextNode.parent;
-            }
-
-            return result;
         }
     };
 
@@ -78,29 +51,6 @@ namespace fish
             }
 
             return matrix;
-        }
-
-        glm::mat4 buildWorld(World& world, Node node)
-        {
-            glm::mat4 result = build();
-
-            if (node.parent == entt::null)
-                return result;
-
-            entt::entity next = node.parent;
-
-            auto& registry = world.getRegistry();
-            while (next != entt::null) {
-                bool hasComponents = registry.all_of<Node, Transform3D>(next);
-                FISH_ASSERT(hasComponents, "Node parent must have Node and Transform3D components");
-                
-                auto [nextNode, transform] = registry.get<Node, Transform3D>(next);
-
-                result *= transform.buildWorld(world, node);
-                next = nextNode.parent;
-            }
-
-            return result;
         }
     };
 }

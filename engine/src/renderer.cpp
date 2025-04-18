@@ -64,11 +64,7 @@ namespace fish
 
             unsigned int shader = this->shaderCache.getShader(material.shader);
             
-            glm::mat4 model;
-            if (registry.any_of<Node>(ent))
-                model = transform.buildWorld(world, registry.get<Node>(ent));
-            else
-                model = transform.build();
+            glm::mat4 model = transform.build();
             glUseProgram(shader);
             helpers::Uniform::uniformVec3(
                 shader, 
