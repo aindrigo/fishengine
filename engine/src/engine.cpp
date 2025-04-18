@@ -56,8 +56,8 @@ namespace fish
         this->state = EngineState::RUNNING;
      
         auto& world = this->services.addService<World>();
-        auto& assets = this->services.addService<Assets>(std::filesystem::current_path() / "assets");
-        auto& sceneLoader = this->services.addServiceData(SceneLoader(services));
+        this->services.addService<Assets>(std::filesystem::current_path() / "assets");
+        this->services.addServiceData(SceneLoader(services));
         // init libraries
         glfwSetErrorCallback(glfwErrorCallback);
         FISH_ASSERT(glfwInit(), "GLFW failed to initialize");
@@ -73,10 +73,6 @@ namespace fish
         glEnable(GL_DEPTH_TEST);
         glfwSwapInterval(1);
         glfwShowWindow(window);
-
-        auto& registry = world.getRegistry();
-        
-        auto panel = world.createPanel();
 
         doLoop();
     }

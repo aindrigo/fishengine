@@ -2,6 +2,7 @@
 #include "fish/engine.hpp"
 #include "fish/events.hpp"
 #include "fish/helpers.hpp"
+#include "fish/transform.hpp"
 #include "fish/world.hpp"
 #include "fish/runtimesystem.hpp"
 #include "nlohmann/json.hpp" // IWYU pragma: keep
@@ -65,6 +66,21 @@ namespace fish
             auto& world = services.getService<World>();
 
             world.addSystem<RuntimeSystem>();
+
+            auto panel1 = world.createPanel();
+            auto [material1, transform1] = world.getRegistry().get<Material, Transform2D>(panel1);
+            transform1.z = 1;
+            transform1.position = { 100, 100 };
+            transform1.alignment = Transform2D::AlignmentMode::CENTER;
+            
+            auto panel2 = world.createPanel();
+            auto [material2, transform2] = world.getRegistry().get<Material, Transform2D>(panel2);
+            material2.setProperty("color", Color { 155, 155, 155, 200 });
+            transform2.size = { 200, 200};
+            transform2.position = { 0, 0 };
+            transform2.z = 0;
+
+            world.setParent(panel1, panel2);
             return eventData;
         });
         this->engine->start();

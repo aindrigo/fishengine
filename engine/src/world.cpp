@@ -6,7 +6,6 @@
 #include "fish/transform.hpp"
 #include "fish/node.hpp"
 #include "fish/common.hpp"
-#include "glm/ext/matrix_float4x4.hpp"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -17,7 +16,7 @@ namespace fish
     {
         this->registry.on_destroy<entt::entity>().connect<&World::onEntityDestroy>(this);
         this->root = registry.create();
-        this->registry.emplace<Node>(this->root);
+        this->registry.emplace<Node>(this->root, Node { .me = this->root });
     }
     
     entt::registry& World::getRegistry() { return this->registry; }
@@ -73,7 +72,7 @@ namespace fish
     {
         entt::entity newEntity = this->registry.create();
         
-        auto& node = registry.emplace<Node>(newEntity);
+        auto& node = registry.emplace<Node>(newEntity, Node { .me = newEntity });
         setParent(newEntity, parent);
         return newEntity;
     }
@@ -84,48 +83,49 @@ namespace fish
         registry.emplace<Panel>(ent, Panel {});
         auto& material = registry.emplace<Material>(ent, Material("2D_Panel"));
         auto& transform = registry.emplace<Transform2D>(ent, Transform2D {
-            .alignment = Transform2D::AlignmentMode::CENTER,
+            .alignment = Transform2D::AlignmentMode::TOP_LEFT,
             .position = { 0.0f, 0.0f }
         });
         
         return ent;
     }
 
-    glm::mat4 World::build3DTransform(entt::entity entity)
+    Transform3D World::worldSpace3DTransform(entt::entity entity)
     {
         FISH_ASSERT(isValid(entity), "Cannot build transform for an invalid entity");
         FISH_ASSERT(registry.all_of<Transform3D>(entity), "Cannot build 3D transform on an entity with no Transform3D component");
 
         auto& transform = registry.get<Transform3D>(entity);
-        glm::mat4 result = transform.build();
 
         auto& node = registry.get<Node>(entity);
         
+        Transform3D result = transform;
         if (!isValid(node.parent))
             return result;
 
         entt::entity next = node.parent;
         while (isValid(next)) {
-            auto& nextNode = registry.get<Node>(node.parent);
+            auto& nextNode = registry.get<Node>(next);
+            next = nextNode.parent;
             if (!registry.all_of<Transform3D>(nextNode.me))
-                continue;
+                break;
 
             auto& transform = registry.get<Transform3D>(nextNode.me);
-            result *= transform.build();
-
-            next = nextNode.parent;
+            result.position += transform.position;
+            result.eulerAngles += transform.eulerAngles;
+            result.scale *= transform.scale;
         }
 
         return result;
     }
 
-    glm::mat4 World::build2DTransform(entt::entity entity)
+    Transform2D World::worldSpace2DTransform(entt::entity entity)
     {
         FISH_ASSERT(isValid(entity), "Cannot build transform for an invalid entity");
         FISH_ASSERT(registry.all_of<Transform2D>(entity), "Cannot build 2D transform on an entity with no Transform2D component");
 
         auto& transform = registry.get<Transform2D>(entity);
-        glm::mat4 result = transform.build();
+        Transform2D result = transform;
 
         auto& node = registry.get<Node>(entity);
         
@@ -134,14 +134,14 @@ namespace fish
 
         entt::entity next = node.parent;
         while (isValid(next)) {
-            auto& nextNode = registry.get<Node>(node.parent);
+            auto& nextNode = registry.get<Node>(next);
+            next = nextNode.parent;
             if (!registry.all_of<Transform2D>(nextNode.me))
-                continue;
+                break;
 
             auto& transform = registry.get<Transform2D>(nextNode.me);
-            result *= transform.build();
-
-            next = nextNode.parent;
+            result.position += transform.position;
+            //result.size *= transform.size;
         }
 
         return result;
@@ -183,6 +183,8 @@ namespace fish
         auto& node = this->registry.get<Node>(entity);
         auto& parentNode = registry.get<Node>(parent);
     
+        node.parent = parent;
+
         if (!isValid(parentNode.firstChild)) {
             parentNode.firstChild = entity;
             return;   

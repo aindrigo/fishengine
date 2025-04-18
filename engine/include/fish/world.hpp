@@ -3,7 +3,7 @@
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "fish/system.hpp"
-#include "glm/ext/matrix_float4x4.hpp"
+#include "fish/transform.hpp"
 #include "system.hpp"
 #include <memory>
 #include <type_traits>
@@ -35,8 +35,8 @@ namespace fish
         entt::entity create(entt::entity parent = entt::null);
         entt::entity createPanel();
         
-        glm::mat4 build3DTransform(entt::entity entity);
-        glm::mat4 build2DTransform(entt::entity entity);
+        Transform3D worldSpace3DTransform(entt::entity entity);
+        Transform2D worldSpace2DTransform(entt::entity entity);
 
         void update();
         void shutdown();
