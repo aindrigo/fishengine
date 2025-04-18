@@ -38,6 +38,11 @@ namespace fish
         void shutdown();
     
     private:
+        entt::entity root;
+        void clearEntityParent(entt::entity entity);
+        void moveEntityParent(entt::entity entity, entt::entity parent);
+
+        void onEntityDestroy(entt::entity entity);
         std::vector<std::unique_ptr<ISystem>> systems;
         entt::registry registry;
     };
