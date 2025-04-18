@@ -28,6 +28,10 @@ namespace fish
             return;
         }
     
+        bool isValid(entt::entity entity);
+        void setParent(entt::entity entity, entt::entity parent = entt::null);
+
+        entt::entity create(entt::entity parent = entt::null);
         entt::entity createPanel();
         
         void update();

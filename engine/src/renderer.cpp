@@ -52,7 +52,9 @@ namespace fish
     {
         FISH_ASSERT(registry.all_of<Camera3D>(this->cameraEntity), "Camera3D not found on camera entity");
         Camera3D& camera = registry.get<Camera3D>(cameraEntity);
-        
+
+        auto& world = services.getService<World>();
+
         auto group = registry.group<Mesh>(entt::get<VertexGPUData, Material, Transform3D>);
         glm::mat4 view = camera.transform.build();
         glm::mat4 projection = camera.build(static_cast<float>(width) / static_cast<float>(height));
@@ -62,6 +64,11 @@ namespace fish
 
             unsigned int shader = this->shaderCache.getShader(material.shader);
             
+            glm::mat4 model;
+            if (registry.any_of<Node>(ent))
+                model = transform.buildWorld(world, registry.get<Node>(ent));
+            else
+                model = transform.build();
             glUseProgram(shader);
             helpers::Uniform::uniformVec3(
                 shader, 
@@ -72,7 +79,7 @@ namespace fish
             helpers::Uniform::uniformMatrix4x4(
                 shader,
                 "model",
-                transform.build()
+                model
             );
 
             helpers::Uniform::uniformMatrix4x4(
