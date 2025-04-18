@@ -1,5 +1,14 @@
 .clangd
 CMakeUserPresets.json
+steam_appid.txt
+game.json
+steam_api64.dll
+steam_api.dll
+lib_steamapi.dylib
+lib_steamapi.so
 
+/bin
 /out
 /.vscode
+/vendor/steamworks/bin
+/vendor/steamworks/public

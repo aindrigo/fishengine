@@ -26,11 +26,11 @@
             }
         },
         {
-            "name": "base-gnu",
+            "name": "base-msys2",
             "hidden": true,
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "gcc",
-                "CMAKE_CXX_COMPILER": "g++"
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++"
             }
         },
         {
@@ -52,12 +52,12 @@
         {
             "name": "x86-debug-msys2",
             "displayName": "Windows (x86, MSYS2)",
-            "inherits": [ "base-windows", "base-x86", "base-debug", "base-gnu" ]
+            "inherits": [ "base-windows", "base-x86", "base-debug", "base-msys2" ]
         },
         {
             "name": "x64-debug-msys2",
             "displayName": "Windows (x64, MSYS2)",
-            "inherits": [ "base-windows", "base-x64", "base-debug", "base-gnu" ]
+            "inherits": [ "base-windows", "base-x64", "base-debug", "base-msys2" ]
         }
     ]
 }

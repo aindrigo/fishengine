@@ -14,8 +14,7 @@ namespace fish
     {
     public:
         World();
-
-        std::weak_ptr<entt::registry> getRegistry();
+        entt::registry& getRegistry();
 
         template <typename SystemType, typename... Args>
         void addSystem(const Args... args)
@@ -23,17 +22,19 @@ namespace fish
             static_assert(std::is_base_of<ISystem, SystemType>(), "Systems must be derived from ISystem");
             
             std::unique_ptr<ISystem> system = std::make_unique<SystemType>(args...);
-            system->init(std::weak_ptr<entt::registry>(this->registry));
+            system->init();
             systems.emplace_back(std::move(system));
             
             return;
         }
-
+    
+        entt::entity createPanel();
+        
         void update();
         void shutdown();
     
     private:
         std::vector<std::unique_ptr<ISystem>> systems;
-        std::shared_ptr<entt::registry> registry;
+        entt::registry registry;
     };
 }

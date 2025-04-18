@@ -2,10 +2,11 @@
 
 #include "GLFW/glfw3.h"
 #include "entt/entity/fwd.hpp"
-#include "fish/assets.hpp"
+#include "fish/services.hpp"
 #include "fish/system.hpp"
 #include "glad/gl.h"
-#include <memory>
+#include "fish/model.hpp"
+#include "services.hpp"
 #include <string>
 #include <unordered_map>
 
@@ -14,15 +15,15 @@ namespace fish
     class Renderer : public ISystem
     {
     public:
-        Renderer(Assets& assets, GLFWwindow* window);
-        void init(std::weak_ptr<entt::registry> regPtr) override; 
+        Renderer(Services& services, GLFWwindow* window);
+        void init() override; 
         void update() override;  
         void shutdown() override;
     private:
         class ShaderCache
         {
         public:
-            ShaderCache(Assets& assets);
+            ShaderCache(Services& services);
             unsigned int getShader(const std::string& name);
             void shutdown();
         private:
@@ -39,15 +40,21 @@ namespace fish
                 unsigned int program;
             };
             
-            Assets& assets;
+            Services& services;
             std::unordered_map<std::string, ShaderData> shaders;
         };
 
-        GLFWwindow* window;
-        entt::entity cameraEntity;
+        void render3D(int width, int height);
+        void createRect();
+        void render2D(int width, int height);
         void onMeshCreate(entt::entity entity);
         void onMeshDestroy(entt::entity entity);
+
+        Services& services;
+        VertexGPUData rect;
+        GLFWwindow* window;
+        entt::registry& registry;
+        entt::entity cameraEntity;
         ShaderCache shaderCache;
-        std::weak_ptr<entt::registry> regPtr;
     };
 }

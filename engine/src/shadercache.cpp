@@ -1,6 +1,7 @@
 #include "fish/assets.hpp"
 #include "fish/common.hpp"
 #include "fish/renderer.hpp"
+#include "fish/services.hpp"
 #include <filesystem>
 #include <format>
 #include <stdexcept>
@@ -9,13 +10,14 @@
 
 namespace fish
 {
-    Renderer::ShaderCache::ShaderCache(Assets& assets)
-        : assets(assets)
+    Renderer::ShaderCache::ShaderCache(Services& services)
+        : services(services)
     {}
 
     unsigned int Renderer::ShaderCache::getShader(const std::string& name)
     {
-        FISH_ASSERTF(this->assets.exists(std::filesystem::path("shaders") / std::filesystem::path(name)), "Shader {} does not exist", name);
+        auto& assets = this->services.getService<Assets>();
+        FISH_ASSERTF(assets.exists(std::filesystem::path("shaders") / std::filesystem::path(name)), "Shader {} does not exist", name);
         
         if (!this->shaders.contains(name))
             this->createShader(name);
@@ -25,15 +27,16 @@ namespace fish
 
     void Renderer::ShaderCache::createShader(const std::string& name)
     {
+        auto& assets = this->services.getService<Assets>();
         std::filesystem::path shaderPath = std::filesystem::path("shaders") / std::filesystem::path(name);
         std::filesystem::path vertPath = shaderPath / std::filesystem::path("shader.vert");
-        FISH_ASSERTF(this->assets.exists(vertPath), "shader.vert does not exist for shader {}", name);
+        FISH_ASSERTF(assets.exists(vertPath), "shader.vert does not exist for shader {}", name);
         
         std::filesystem::path fragPath = shaderPath / std::filesystem::path("shader.frag");
-        FISH_ASSERTF(this->assets.exists(fragPath), "shader.frag does not exist for shader {}", name);
+        FISH_ASSERTF(assets.exists(fragPath), "shader.frag does not exist for shader {}", name);
 
-        std::string vertShaderStr = this->assets.findAssetString(vertPath);
-        std::string fragShaderStr = this->assets.findAssetString(fragPath);
+        std::string vertShaderStr = assets.findAssetString(vertPath);
+        std::string fragShaderStr = assets.findAssetString(fragPath);
         
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -50,6 +53,7 @@ namespace fish
         glLinkProgram(shaderProgram);
 
         int success;
+        glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
         if (success == 0) {
             int length;
             glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &length);
@@ -99,7 +103,7 @@ namespace fish
     {
         for (auto const& [name, shader] : this->shaders)
         {
-            glDeleteShader(shader.program);
+            glDeleteProgram(shader.program);
         }
     }
 }
