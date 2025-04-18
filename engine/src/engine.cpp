@@ -124,7 +124,7 @@ namespace fish
         
         glfwMakeContextCurrent(window);
         gladLoadGL(glfwGetProcAddress);
-        auto& input = this->services.addService<UserInput>(window);
+        auto& input = this->services.addServiceData(UserInput(window, services));
         input.installCallbacks();
 
 #ifndef NDEBUG
@@ -143,9 +143,9 @@ namespace fish
     void Engine::doLoop()
     {
         auto& world = this->services.getService<World>();
-        auto& gameInfo = this->services.addService<EngineInfo>();
+        auto& engineInfo = this->services.addService<EngineInfo>();
 
-        float tickDelay = 1.0f / gameInfo.tickRate;
+        float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
         auto& events = this->services.getService<EventDispatcher>();
@@ -153,10 +153,10 @@ namespace fish
         while (!glfwWindowShouldClose(window))
         {
             std::chrono::high_resolution_clock::time_point begin = std::chrono::high_resolution_clock::now();
-            gameInfo.gameTime += deltaTime;
+            engineInfo.gameTime += deltaTime;
 
             // tick
-            if (nextTick < gameInfo.gameTime) {
+            if (nextTick < engineInfo.gameTime) {
                 doTick();
                 nextTick += tickDelay;
             }
