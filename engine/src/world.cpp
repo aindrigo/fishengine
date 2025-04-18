@@ -6,6 +6,7 @@
 #include "fish/transform.hpp"
 #include "fish/node.hpp"
 #include "fish/common.hpp"
+#include "glm/ext/matrix_float4x4.hpp"
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -88,6 +89,62 @@ namespace fish
         });
         
         return ent;
+    }
+
+    glm::mat4 World::build3DTransform(entt::entity entity)
+    {
+        FISH_ASSERT(isValid(entity), "Cannot build transform for an invalid entity");
+        FISH_ASSERT(registry.all_of<Transform3D>(entity), "Cannot build 3D transform on an entity with no Transform3D component");
+
+        auto& transform = registry.get<Transform3D>(entity);
+        glm::mat4 result = transform.build();
+
+        auto& node = registry.get<Node>(entity);
+        
+        if (!isValid(node.parent))
+            return result;
+
+        entt::entity next = node.parent;
+        while (isValid(next)) {
+            auto& nextNode = registry.get<Node>(node.parent);
+            if (!registry.all_of<Transform3D>(nextNode.me))
+                continue;
+
+            auto& transform = registry.get<Transform3D>(nextNode.me);
+            result *= transform.build();
+
+            next = nextNode.parent;
+        }
+
+        return result;
+    }
+
+    glm::mat4 World::build2DTransform(entt::entity entity)
+    {
+        FISH_ASSERT(isValid(entity), "Cannot build transform for an invalid entity");
+        FISH_ASSERT(registry.all_of<Transform2D>(entity), "Cannot build 2D transform on an entity with no Transform2D component");
+
+        auto& transform = registry.get<Transform2D>(entity);
+        glm::mat4 result = transform.build();
+
+        auto& node = registry.get<Node>(entity);
+        
+        if (!isValid(node.parent))
+            return result;
+
+        entt::entity next = node.parent;
+        while (isValid(next)) {
+            auto& nextNode = registry.get<Node>(node.parent);
+            if (!registry.all_of<Transform2D>(nextNode.me))
+                continue;
+
+            auto& transform = registry.get<Transform2D>(nextNode.me);
+            result *= transform.build();
+
+            next = nextNode.parent;
+        }
+
+        return result;
     }
 
     void World::clearEntityParent(entt::entity entity)

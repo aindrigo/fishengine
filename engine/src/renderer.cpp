@@ -64,7 +64,7 @@ namespace fish
 
             unsigned int shader = this->shaderCache.getShader(material.shader);
             
-            glm::mat4 model = transform.build();
+            glm::mat4 model = world.build3DTransform(ent);
             glUseProgram(shader);
             helpers::Uniform::uniformVec3(
                 shader, 
@@ -132,6 +132,7 @@ namespace fish
 
     void Renderer::render2D(int width, int height)
     {
+        auto& world = services.getService<World>();
 
         auto group = registry.group<Panel>(entt::get<Transform2D, Material>);
         group.sort<Transform2D>([](const Transform2D& lhs, const Transform2D& rhs) {
@@ -141,6 +142,8 @@ namespace fish
 
         for (auto const& ent : group) {
             auto [transform, material] = group.get(ent);
+
+            glm::mat4 model = world.build2DTransform(ent);
 
             GLuint shader = this->shaderCache.getShader(material.shader);
 
@@ -155,7 +158,7 @@ namespace fish
             helpers::Uniform::uniformMatrix4x4(
                 shader,
                 "model",
-                transform.build()
+                model
             );
 
             helpers::Uniform::uniformColor(

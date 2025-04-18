@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -36,7 +37,7 @@ namespace fish
 
         template <typename T>
         struct PropertyContainer : public IPropertyContainer {
-            PropertyContainer(T data)
+            PropertyContainer<T>(T data)
                 : data(data)
             {}
 
