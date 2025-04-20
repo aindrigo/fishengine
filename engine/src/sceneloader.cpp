@@ -2,15 +2,18 @@
 #include "assimp/Importer.hpp"
 #include "assimp/Logger.hpp"
 #include "assimp/cimport.h"
+#include "assimp/material.h"
 #include "assimp/mesh.h"
 #include "assimp/postprocess.h"
 #include "assimp/scene.h"
 #include "assimp/types.h"
 #include "fish/assets.hpp"
 #include "fish/helpers.hpp"
+#include "fish/material.hpp"
 #include "fish/model.hpp"
 #include "fish/scenes.hpp"
 #include "fish/services.hpp"
+#include "fish/texture.hpp"
 #include "fish/world.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/quaternion_float.hpp"
@@ -18,6 +21,9 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/vector_float4.hpp"
 #include "glm/gtc/quaternion.hpp"
+#include <format>
+#include <stdexcept>
+#include <string>
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/matrix_decompose.hpp"
 #include <filesystem>
@@ -36,7 +42,7 @@ namespace fish
     void SceneLoader::init()
     {
         Assimp::Logger::LogSeverity severity = Assimp::Logger::NORMAL;
-
+        this->importer.SetIOHandler(new ASIOHandler(services));
         Assimp::DefaultLogger::create("", severity, aiDefaultLogStream_STDOUT);
     }
 
@@ -45,14 +51,14 @@ namespace fish
         auto& assets = services.getService<Assets>();
         FISH_ASSERTF(assets.exists(path), "Scene {} not found", path.string());
 
-        std::vector<unsigned char> data = assets.findAssetBytes(path);
-
-        const aiScene* scene = importer.ReadFileFromMemory(
-            data.data(),
-            data.size(),
-            aiProcessPreset_TargetRealtime_Fast,
-            ""
+        const aiScene* scene = importer.ReadFile(
+            path.string(),
+            aiProcessPreset_TargetRealtime_Fast
         );
+
+        if (scene == nullptr) {
+            throw std::runtime_error(std::format("Could not open scene {}!: {}", path.string(), importer.GetErrorString()));
+        }
         
         Scene result;
         auto node = scene->mRootNode;
@@ -97,7 +103,7 @@ namespace fish
                 .vertices = std::vector<Vertex>(assimpMesh->mNumVertices),
                 .indices = std::vector<unsigned int>(),
                 .position = position,
-                .eulerAngles = glm::eulerAngles(orientation),
+                .rotation = glm::eulerAngles(orientation),
                 .scale = scale
             };
 
@@ -115,6 +121,36 @@ namespace fish
                     .bitangent = glm::vec3(bitangent.x, bitangent.y, bitangent.z),
                     .uv = glm::vec2(uv.x, uv.y)
                 };
+
+                if (assimpScene->HasMaterials()) {
+                    aiMaterial* material = assimpScene->mMaterials[assimpMesh->mMaterialIndex];
+                    aiString diffusePath;
+                    aiTextureMapMode diffuseMapMode;
+                    material->GetTexture(aiTextureType_DIFFUSE, 0, &diffusePath, NULL, NULL, NULL, NULL, &diffuseMapMode);
+                    if (diffusePath.length > 0) {
+                        TextureWrapMode diffuseWrapMode;
+                        switch (diffuseMapMode) {
+                            case aiTextureMapMode_Clamp:
+                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                                break;
+                            case aiTextureMapMode_Wrap:
+                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE; // idk what Wrap means
+                                break;
+                            case aiTextureMapMode_Decal:
+                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                                break;
+                            case aiTextureMapMode_Mirror:
+                                diffuseWrapMode = TextureWrapMode::MIRRORED_REPEAT;
+                                break;
+                            default:
+                                break;
+                        }
+                        model.material = Scene::Material {
+                            .diffuseMap = diffusePath.C_Str(),
+                            .diffuseWrapMode = diffuseWrapMode
+                        };
+                    }
+                }
             }
 
             for (unsigned int i = 0; i < assimpMesh->mNumFaces; i++) {
@@ -136,15 +172,23 @@ namespace fish
         for (auto const& model : scene.models) {
             auto ent = world.create();
             auto& transform = registry.emplace<Transform3D>(ent);
+    
             transform.position = model.position;
-            transform.eulerAngles = model.eulerAngles;
+            transform.rotation = model.rotation;
             transform.scale = model.scale;
             
             registry.emplace<Mesh>(ent, Mesh {
                 .vertices = model.vertices,
                 .indices = model.indices
             });
-            registry.emplace<Material>(ent, Material("3D_Lit"));
+            
+            Material material("3D_Lit");
+            if (model.material.has_value()) {
+                material.setProperty<std::string>("diffuseMap", model.material->diffuseMap);
+                material.setProperty<TextureWrapMode>("diffuseWrapMode", model.material->diffuseWrapMode);
+            }
+
+            registry.emplace<Material>(ent, material);
         }
     }
 }

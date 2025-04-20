@@ -1,7 +1,8 @@
 #include "fish/assets.hpp"
 #include "fish/common.hpp"
-#include "fish/renderer.hpp"
+#include "fish/shaders.hpp"
 #include "fish/services.hpp"
+#include "glad/gl.h"
 #include <filesystem>
 #include <format>
 #include <stdexcept>
@@ -10,11 +11,11 @@
 
 namespace fish
 {
-    Renderer::ShaderCache::ShaderCache(Services& services)
+    ShaderCache::ShaderCache(Services& services)
         : services(services)
     {}
 
-    unsigned int Renderer::ShaderCache::getShader(const std::string& name)
+    unsigned int ShaderCache::getShader(const std::string& name)
     {
         auto& assets = this->services.getService<Assets>();
         FISH_ASSERTF(assets.exists(std::filesystem::path("shaders") / std::filesystem::path(name)), "Shader {} does not exist", name);
@@ -25,7 +26,7 @@ namespace fish
         return this->shaders.at(name).program;
     }
 
-    void Renderer::ShaderCache::createShader(const std::string& name)
+    void ShaderCache::createShader(const std::string& name)
     {
         auto& assets = this->services.getService<Assets>();
         std::filesystem::path shaderPath = std::filesystem::path("shaders") / std::filesystem::path(name);
@@ -72,7 +73,7 @@ namespace fish
         glDeleteShader(fragmentShader);
     }
 
-    Renderer::ShaderCache::ShaderCompilationResult Renderer::ShaderCache::compileShader(unsigned int shader, const std::string& code)
+    ShaderCache::ShaderCompilationResult ShaderCache::compileShader(unsigned int shader, const std::string& code)
     {
         const char* shaderCode = code.c_str();
 
@@ -99,7 +100,7 @@ namespace fish
         return result;
     }
 
-    void Renderer::ShaderCache::shutdown()
+    void ShaderCache::shutdown()
     {
         for (auto const& [name, shader] : this->shaders)
         {

@@ -2,58 +2,73 @@
 
 #include "GLFW/glfw3.h"
 #include "entt/entity/fwd.hpp"
+#include "fish/model.hpp"
 #include "fish/services.hpp"
 #include "fish/system.hpp"
+#include "fish/texture.hpp"
+#include "fish/world.hpp"
 #include "glad/gl.h"
-#include "fish/model.hpp"
+#include "fish/shaders.hpp"
 #include "services.hpp"
-#include <string>
-#include <unordered_map>
 
 namespace fish
 {
-    class Renderer : public ISystem
+    
+    
+    class Renderer3D : public ISystem
     {
     public:
-        Renderer(Services& services, GLFWwindow* window);
-        void init() override; 
-        void update() override;  
+        Renderer3D(Services& services, GLFWwindow* window);
+        void init() override;
+        void update() override;
         void shutdown() override;
+
+        void preClearScreen();
     private:
-        class ShaderCache
-        {
-        public:
-            ShaderCache(Services& services);
-            unsigned int getShader(const std::string& name);
-            void shutdown();
-        private:
-            
-            void createShader(const std::string& name);
-
-            struct ShaderCompilationResult {
-                bool success;
-                std::string message;
-            };
-            ShaderCompilationResult compileShader(unsigned int shader, const std::string& code);
-
-            struct ShaderData {
-                unsigned int program;
-            };
-            
-            Services& services;
-            std::unordered_map<std::string, ShaderData> shaders;
-        };
-
-        void render3D(int width, int height);
-        void createRect();
-        void render2D(int width, int height);
+        void initBuffers();
         void onMeshCreate(entt::entity entity);
         void onMeshDestroy(entt::entity entity);
+        void render(int width, int height);
 
+
+        
+        TextureManager& textureManager;
+        ShaderCache& shaderCache;
         Services& services;
-        VertexGPUData rect;
+        World& world;
         GLFWwindow* window;
-        entt::registry& registry;
-        ShaderCache shaderCache;
+    };
+
+    class Renderer2D : public ISystem
+    {
+    public:
+        Renderer2D(Services& services, GLFWwindow* window);
+        void init() override;
+        void update() override;
+        void shutdown() override;
+    private:
+        void render(int width, int height);
+        void createRect();
+
+        VertexGPUData rect;
+        TextureManager& textureManager;
+        ShaderCache& shaderCache;
+        Services& services;
+        World& world;
+        GLFWwindow* window;
+    };
+
+    class Screen
+    {
+    public:
+        Screen(GLFWwindow* window);
+        void init();
+        void clearScreen();
+    private:
+        GLuint colorBuffer;
+        GLuint depthBuffer;
+        GLuint frameBuffer;
+
+        GLFWwindow* window;
     };
 }

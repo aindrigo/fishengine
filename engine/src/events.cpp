@@ -24,7 +24,7 @@ namespace fish
             CPPTRACE_TRY {
                 result = observer(result);
             } CPPTRACE_CATCH (std::exception& e) {
-                std::cout << std::format("Caught an exception dispatching event {}, continuing anyway", name) << std::endl;
+                std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
                 cpptrace::from_current_exception().print();
             }
         }

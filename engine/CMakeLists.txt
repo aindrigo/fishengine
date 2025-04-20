@@ -8,6 +8,8 @@ set(FISH_ENGINE_DEPS
     glm::glm
     cpptrace::cpptrace
     assimp
+    stb
+    nlohmann_json
 )
 
 add_library(fish_engine STATIC ${FISH_ENGINE_SOURCES})

@@ -2,7 +2,9 @@
 #include "fish/common.hpp"
 #include <filesystem>
 #include <fstream>
-#include <iterator>
+#include <ios>
+#include <iosfwd>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -26,13 +28,12 @@ namespace fish
         std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
         FISH_ASSERTF(std::filesystem::is_regular_file(fsPath), "Asset {} does not exist or is not a file", assetPath.string());
-        std::ifstream stream(fsPath);
-
+        std::ifstream stream(fsPath, std::ios_base::in);   
         std::stringstream strstream;
         strstream << stream.rdbuf();
 
+        stream.close();
         return strstream.str();
-
     }
 
     std::vector<unsigned char> Assets::findAssetBytes(const std::filesystem::path& assetPath)
@@ -40,10 +41,17 @@ namespace fish
         std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
         FISH_ASSERTF(std::filesystem::is_regular_file(fsPath), "Asset {} does not exist or is not a file", assetPath.string());
-        std::ifstream stream(fsPath);
+        std::ifstream stream(fsPath, std::ios_base::binary | std::ios_base::in | std::ios_base::ate);
+        stream.unsetf(std::ios_base::skipws);
+        
+        std::streampos size = stream.tellg();
+        stream.seekg(0);
+        
+        std::vector<unsigned char> data(size);
 
-        return std::vector<unsigned char>(
-            (std::istreambuf_iterator<char>(stream)), 
-            std::istreambuf_iterator<char>());
+        stream.read(reinterpret_cast<char*>(data.data()), size);
+        stream.close();
+
+        return data;
     }
 }

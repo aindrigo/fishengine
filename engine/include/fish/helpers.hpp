@@ -55,6 +55,14 @@ namespace fish::helpers
                 data.a / 255.0f
             );
         }
+
+        static void uniformInt(unsigned int shader, std::string location, int data)
+        {
+            glUniform1i(
+                glGetUniformLocation(shader, location.c_str()),
+                data
+            );
+        }
     };
 
     class File
@@ -90,6 +98,17 @@ namespace fish::helpers
             result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
             result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
             return result;
+        }
+
+        // https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/
+        static glm::mat4 perspectiveReverseZ(float fovy, float aspect, float zNear)
+        {
+            float f = 1.0f / tan(fovy / 2.0f);
+            return glm::mat4(
+                f / aspect, 0.0f,  0.0f,  0.0f,
+                        0.0f,    f,  0.0f,  0.0f,
+                        0.0f, 0.0f,  0.0f, -1.0f,
+                        0.0f, 0.0f, zNear,  0.0f);
         }
     };
 

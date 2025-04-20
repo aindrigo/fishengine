@@ -16,15 +16,16 @@ namespace fish
             this->properties[name] = std::make_shared<PropertyContainer<T>>(data);
         }
 
+        template <typename T>
         bool hasProperty(const std::string& name)
         {
-            return this->properties.contains(name);
+            return this->properties.contains(name) && typeid(this->properties.at(name)) == typeid(std::shared_ptr<IPropertyContainer>);
         }
 
         template <typename T>
         std::optional<T> getProperty(const std::string& name)
         {
-            if (!this->hasProperty(name))
+            if (!this->hasProperty<T>(name))
                 return std::nullopt;
             if (auto container = dynamic_cast<PropertyContainer<T>*>(this->properties.at(name).get()))
                 return container->data;

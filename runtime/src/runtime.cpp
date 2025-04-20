@@ -1,13 +1,20 @@
 #include "fish/runtime.hpp"
+#include "fish/camera.hpp"
 #include "fish/engine.hpp"
 #include "fish/engineinfo.hpp"
 #include "fish/events.hpp"
 #include "fish/helpers.hpp"
 #include "fish/scenes.hpp"
 #include "fish/transform.hpp"
+#include "fish/userinput.hpp"
 #include "fish/world.hpp"
 #include "fish/runtimesystem.hpp"
+#include "glm/common.hpp"
+#include "glm/ext/quaternion_trigonometric.hpp"
+#include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
+#include "glm/fwd.hpp"
+#include "glm/trigonometric.hpp"
 #include "nlohmann/json.hpp" // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
 #include <filesystem>
@@ -65,34 +72,72 @@ namespace fish
     {
         auto& services = this->engine->getServices();
         auto& events = services.getService<EventDispatcher>();
+        glm::vec2 mouseRot { 0, 0 };
 
         events.observe("start", [&](auto& eventData) {
             auto& world = services.getService<World>();
             auto& loader = services.getService<SceneLoader>();
             auto& engineInfo = services.getService<EngineInfo>();
+            auto& userInput = services.getService<UserInput>();
 
             auto& registry = world.getRegistry();
+            
+            auto camera = world.create();
+            registry.emplace<Camera3D>(camera);
+            auto& transform = registry.emplace<Transform3D>(camera);
 
-            auto& camera = engineInfo.camera.value();
-            auto& transform = registry.get<Transform3D>(camera);
-
-            transform.eulerAngles.y = 89.5f;
-            transform.position.y = -500.0f;
-            transform.position.z = -900.0f;
+            engineInfo.camera = camera;
+            //transform.rotation.y = 90.0f;
+            //transform.position.y = -500.0f;
+            //transform.position.z = -800.0f;
             Scene scene = loader.load("models/sponza.obj");
             loader.loadIntoWorld(scene);
 
+            userInput.setCursorLockMode(CursorLockMode::DISABLED);
+
             world.addSystem<RuntimeSystem>();
 
-            // events.observe("onCursorMove", [&](auto& cursorEventData) {
-            //     std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
-            //     if (!deltaOpt.has_value())
-            //         return eventData;
+            events.observe("onCursorMove", [&](auto& cursorEventData) {
+                std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
+                if (!deltaOpt.has_value())
+                    return eventData;
 
-            //     glm::vec2 delta = deltaOpt.value() * 0.01f;
-            //     transform.eulerAngles += glm::vec3(delta.y, delta.x, 0);
-            //     return eventData;
-            // });
+                glm::vec2 delta = deltaOpt.value() * 0.2f;
+
+                mouseRot += glm::vec2(delta.x, delta.y);
+                mouseRot.y = glm::clamp(mouseRot.y, -90.0f, 90.0f);
+                transform.rotation = glm::angleAxis(glm::radians(mouseRot.x), glm::vec3(0, -1.0f, 0)) *
+                                      glm::angleAxis(glm::radians(mouseRot.y), glm::vec3(-1.0f, 0, 0));
+                
+                return eventData;
+            });
+
+            events.observe("update", [&](auto& updateEventData) {
+                float speed = 205.0f;
+                glm::vec3 move { 0, 0, 0 };
+                if (userInput.isKeyDown(GLFW_KEY_W))
+                    move.z += speed;
+                if (userInput.isKeyDown(GLFW_KEY_S))
+                    move.z -= speed;
+                if (userInput.isKeyDown(GLFW_KEY_A))
+                    move.x += speed;
+                if (userInput.isKeyDown(GLFW_KEY_D))
+                    move.x -= speed;
+                if (userInput.isKeyDown(GLFW_KEY_SPACE))
+                    move.y -= speed;
+                if (userInput.isKeyDown(GLFW_KEY_LEFT_SHIFT))
+                    move.y += speed;
+                
+                if (move.x != 0 || move.y != 0 || move.z != 0) {
+                    auto forward = transform.forward();
+                    auto right = transform.right();
+                    auto up = glm::vec3(0, 1, 0);
+                    auto move3d = forward * move.z + right * move.x + up * move.y;
+
+                    transform.position += engineInfo.deltaTime * move3d;
+                }
+                return updateEventData;
+            });
             
             return eventData;
         });

@@ -122,7 +122,7 @@ namespace fish
 
             auto& transform = registry.get<Transform3D>(nextNode.me);
             result.position += transform.position;
-            result.eulerAngles += transform.eulerAngles;
+            result.rotation += transform.rotation;
             result.scale *= transform.scale;
         }
 

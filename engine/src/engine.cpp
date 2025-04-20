@@ -13,12 +13,16 @@
 #include "fish/renderer.hpp"
 #include "fish/scenes.hpp"
 #include "fish/services.hpp"
+#include "fish/texture.hpp"
 #include "fish/ui.hpp"
 #include "fish/userinput.hpp"
 #include "fish/world.hpp"
 #include "fish/engineinfo.hpp"
 #include "glad/gl.h"
 #include <chrono>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 #ifdef FISH_STEAM
 #include "steam/steam_api.h"
@@ -58,11 +62,15 @@ namespace fish
         FISH_ASSERTF(this->state == EngineState::NOT_RUNNING, "{} is already running", initData.name);
         this->state = EngineState::RUNNING;
      
+        // services
         auto& world = this->services.addService<World>();
         this->services.addService<Assets>(std::filesystem::current_path() / "assets");
         this->services.addService<EngineInfo>();
+        this->services.addServiceData<TextureManager>(TextureManager(services));
+        auto& sceneLoader = this->services.addServiceData(SceneLoader(services));
+        this->services.addServiceData(UI(services));
+        this->services.addServiceData(ShaderCache(services));
 
-        this->services.addServiceData(SceneLoader(services));
         // init libraries
         glfwSetErrorCallback(glfwErrorCallback);
         FISH_ASSERT(glfwInit(), "GLFW failed to initialize");
@@ -72,8 +80,9 @@ namespace fish
 #endif
         // init engine-related things
         this->initWindow();
-
-        world.addSystem<Renderer, Services&, GLFWwindow*>(this->services, window);
+        sceneLoader.init();
+        world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
+        world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
         // start loop
         glEnable(GL_DEPTH_TEST);
         glfwSwapInterval(1);
@@ -87,9 +96,11 @@ namespace fish
         FISH_ASSERTF(this->state != EngineState::NOT_RUNNING, "{} is not running", initData.name);
         this->state = EngineState::NOT_RUNNING;
         
-        World& world = this->services.getService<World>();
+        auto& world = this->services.getService<World>();
+        auto& shaderCache = this->services.getService<ShaderCache>();
 
         // destroy objects
+        shaderCache.shutdown();
         world.shutdown();
         glfwDestroyWindow(window);
 
@@ -150,12 +161,16 @@ namespace fish
         auto& world = this->services.getService<World>();
         auto& events = this->services.getService<EventDispatcher>();
         auto& userInput = this->services.getService<UserInput>();
-        auto& ui = this->services.addServiceData(UI(services));
         auto& engineInfo = this->services.getService<EngineInfo>();
+        auto& ui = this->services.getService<UI>();
+        auto& textureManager = this->services.getService<TextureManager>();
+        auto& screen = this->services.addService<Screen>(window);
+        
         float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
         ui.init();
+        screen.init();
         events.dispatch("start");
         while (!glfwWindowShouldClose(window))
         {
@@ -165,12 +180,13 @@ namespace fish
             // tick
             if (nextTick < engineInfo.gameTime) {
                 nextTick += tickDelay;
+                textureManager.gc();
                 world.tick();
             }
+            screen.clearScreen();
 
-            // frame logic
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
+            events.dispatch("update");
+            // frame logic            
             world.update();
             glfwSwapBuffers(window);
             glfwPollEvents();

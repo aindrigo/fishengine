@@ -4,6 +4,8 @@
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/fwd.hpp"
+#include "glm/gtc/quaternion.hpp"
 #include <utility>
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/gtx/euler_angles.hpp"
@@ -13,16 +15,32 @@ namespace fish
     
     struct Transform3D {
         glm::vec3 position;
-        glm::vec3 eulerAngles;
+        glm::quat rotation;
         glm::vec3 scale { 1, 1, 1 };
 
+        glm::vec3 forward()
+        {
+            return glm::vec3(
+                (rotation * glm::vec3(-1.0f, 0.0f, 0.0f)).z,
+                0,
+                (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z
+            );
+        }
+
+        glm::vec3 right()
+        {
+            return glm::vec3(
+                (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z,
+                0,
+                (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z
+            );
+        }
         glm::mat4 build() 
         {
-            glm::mat4 matrix = glm::mat4(1.0f);
-            matrix = glm::translate(matrix, position);
-            matrix *= glm::eulerAngleXYZ(eulerAngles.x, eulerAngles.y, eulerAngles.z);
-            matrix = glm::scale(matrix, scale);
-            return matrix;
+            glm::mat4 rotationMatrix = glm::mat4_cast(glm::inverse(rotation));
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0), position);
+            glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0), scale);
+            return rotationMatrix * translationMatrix * scalingMatrix;
         }
     };
 
