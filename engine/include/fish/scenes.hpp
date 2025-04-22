@@ -23,6 +23,9 @@ namespace fish
         struct Material {
             std::string diffuseMap;
             TextureWrapMode diffuseWrapMode;
+
+            std::string normalMap;
+            TextureWrapMode normalWrapMode;
         };
         struct Model {
             std::vector<Vertex> vertices;

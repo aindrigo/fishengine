@@ -21,5 +21,10 @@
 #include <format> // IWYU pragma: keep
 #include <stdexcept> // IWYU pragma: keep
 
+#ifndef NDEBUG
 #define FISH_ASSERT(expr, msg) static_cast<bool>(expr) ? void(0) : throw std::runtime_error("Assertion `" #expr "' failed: " msg)
 #define FISH_ASSERTF(expr, msg, ...) static_cast<bool>(expr) ? void(0) : throw std::runtime_error(std::format("Assertion `" #expr "' failed: " msg, __VA_ARGS__))
+#else
+#define FISH_ASSERT(expr, msg) void(0)
+#define FISH_ASSERTF(expr, msg, ...) void(0)
+#endif

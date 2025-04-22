@@ -4,6 +4,8 @@ layout (location = 1) out vec3 gNormal;
 layout (location = 2) out vec4 gAlbedoSpec;
 
 uniform sampler2D diffuseMap;
+uniform sampler2D normalMap;
+uniform bool hasNormalMap;
 
 in vec3 fragPos;
 in vec3 fragNormal;
@@ -12,8 +14,12 @@ in vec2 fragTexCoords;
 void main()
 {
     gPosition = fragPos;
-    gNormal = normalize(fragNormal);
+    if (hasNormalMap) {
+        gNormal = texture(normalMap, fragTexCoords).rgb;
+    } else {
+        gNormal = normalize(fragNormal);
+    }
 
     gAlbedoSpec.rgb = texture(diffuseMap, fragTexCoords).rgb;
-    gAlbedoSpec.a = 0.5f;
+    gAlbedoSpec.a = 8.0f;
 } 

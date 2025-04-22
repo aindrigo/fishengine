@@ -191,7 +191,6 @@ namespace fish
     
             // frame logic            
             world.render();
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glfwSwapBuffers(window);
             glfwPollEvents();
 

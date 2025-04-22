@@ -106,6 +106,11 @@ namespace fish
             auto& lightTransform = registry.emplace<Transform3D>(light);
             lightTransform.position.z += 5;
 
+            auto dirLight = world.create();
+            registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
+                .direction = { 0.0f, -1.0f, 0.5f }
+            });
+
             events.observe("onCursorMove", [&](auto& cursorEventData) {
                 std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
                 if (!deltaOpt.has_value())

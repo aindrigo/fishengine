@@ -2,6 +2,7 @@
 
 #include "assimp/matrix4x4.h"
 #include "fish/common.hpp"
+#include "fish/lights.hpp"
 #include "glad/gl.h"
 
 #include "glm/ext/matrix_float4x4.hpp"
@@ -98,6 +99,13 @@ namespace fish::helpers
                 glGetUniformLocation(shader, location.c_str()),
                 data
             );
+        }
+
+        static void uniformDirectionalLight(unsigned int shader, std::string location, DirectionalLight dirLight)
+        {
+            uniformVec3(shader, std::format("{}.direction", location), dirLight.direction);
+            uniformColor(shader, std::format("{}.color", location), dirLight.color);
+            uniformInt(shader, std::format("{}.enabled", location), 1);
         }
     };
 

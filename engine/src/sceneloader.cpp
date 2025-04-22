@@ -31,6 +31,30 @@
 
 namespace fish
 {
+    TextureWrapMode assimpWrapToFishWrap(aiTextureMapMode mapMode)
+    {
+        TextureWrapMode wrapMode;
+        switch (mapMode) {
+            case aiTextureMapMode_Clamp:
+                wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                break;
+            case aiTextureMapMode_Wrap:
+                wrapMode = TextureWrapMode::CLAMP_TO_BORDER; // idk what Wrap means
+                break;
+            case aiTextureMapMode_Decal:
+                wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                break;
+            case aiTextureMapMode_Mirror:
+                wrapMode = TextureWrapMode::MIRRORED_REPEAT;
+                break;
+            default:
+                wrapMode = TextureWrapMode::REPEAT;
+                break;
+        }
+
+        return wrapMode;
+    }
+
     SceneLoader::SceneLoader(Services& services)
         : services(services)
     {}
@@ -124,33 +148,29 @@ namespace fish
 
                 if (assimpScene->HasMaterials()) {
                     aiMaterial* material = assimpScene->mMaterials[assimpMesh->mMaterialIndex];
+                    Scene::Material sceneMat;
+
+                    // diffuse
                     aiString diffusePath;
                     aiTextureMapMode diffuseMapMode;
                     material->GetTexture(aiTextureType_DIFFUSE, 0, &diffusePath, NULL, NULL, NULL, NULL, &diffuseMapMode);
                     if (diffusePath.length > 0) {
-                        TextureWrapMode diffuseWrapMode;
-                        switch (diffuseMapMode) {
-                            case aiTextureMapMode_Clamp:
-                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
-                                break;
-                            case aiTextureMapMode_Wrap:
-                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_BORDER; // idk what Wrap means
-                                break;
-                            case aiTextureMapMode_Decal:
-                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
-                                break;
-                            case aiTextureMapMode_Mirror:
-                                diffuseWrapMode = TextureWrapMode::MIRRORED_REPEAT;
-                                break;
-                            default:
-                                diffuseWrapMode = TextureWrapMode::REPEAT;
-                                break;
-                        }
-                        model.material = Scene::Material {
-                            .diffuseMap = diffusePath.C_Str(),
-                            .diffuseWrapMode = diffuseWrapMode
-                        };
+                        TextureWrapMode diffuseWrapMode = assimpWrapToFishWrap(diffuseMapMode);
+                        sceneMat.diffuseMap = diffusePath.C_Str();
+                        sceneMat.diffuseWrapMode = diffuseWrapMode;
                     }
+
+                    // normal
+                    aiString normalPath;
+                    aiTextureMapMode normalMapMode;
+                    material->GetTexture(aiTextureType_NORMALS, 0, &normalPath, NULL, NULL, NULL, NULL, &normalMapMode);
+                    if (normalPath.length > 0) {
+                        TextureWrapMode normalWrapMode = assimpWrapToFishWrap(normalMapMode);
+                        sceneMat.normalMap = normalPath.C_Str();
+                        sceneMat.normalWrapMode = normalWrapMode;
+                    }
+
+                    model.material = sceneMat;
                 }
             }
 
@@ -185,8 +205,14 @@ namespace fish
             
             Material material("3D_Lit");
             if (model.material.has_value()) {
-                material.setProperty<std::string>("diffuseMap", model.material->diffuseMap);
-                material.setProperty<TextureWrapMode>("diffuseWrapMode", model.material->diffuseWrapMode);
+                if (!model.material->diffuseMap.empty()) {
+                    material.setProperty<std::string>("diffuseMap", model.material->diffuseMap);
+                    material.setProperty<TextureWrapMode>("diffuseWrapMode", model.material->diffuseWrapMode);
+                }
+                if (!model.material->normalMap.empty()) {
+                    material.setProperty<std::string>("normalMap", model.material->normalMap);
+                    material.setProperty<TextureWrapMode>("normalWrapMode", model.material->normalWrapMode);
+                }
             }
 
             registry.emplace<Material>(ent, material);

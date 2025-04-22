@@ -18,7 +18,6 @@ namespace fish
     {
         if (!this->observers.contains(name))
             return data;
-
         EventData result = data;
         for (auto const& observer : this->observers[name]) {
             CPPTRACE_TRY {

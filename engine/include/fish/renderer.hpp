@@ -3,6 +3,7 @@
 #include "GLFW/glfw3.h"
 #include "entt/entity/fwd.hpp"
 #include "fish/camera.hpp"
+#include "fish/lights.hpp"
 #include "fish/material.hpp"
 #include "fish/model.hpp"
 #include "fish/services.hpp"
@@ -14,8 +15,10 @@
 #include "fish/shaders.hpp"
 #include "glm/ext/matrix_float4x4.hpp"
 #include "services.hpp"
+#include <optional>
 #include <vector>
 
+#define MAX_POINTLIGHTS 256
 namespace fish
 {
     class Screen
@@ -42,6 +45,7 @@ namespace fish
         Renderer3D(Services& services, GLFWwindow* window);
         void init() override;
         void render() override;
+        void tick() override;
         void shutdown() override;
     private:
         static constexpr unsigned int gridSizeX = 16;
@@ -77,9 +81,12 @@ namespace fish
         void initBuffers();
         void onMeshCreate(entt::entity entity);
         void onMeshDestroy(entt::entity entity);
+        void onDirLightCreate(entt::entity entity);
+        void onDirLightDestroy(entt::entity entity);
         void doRender(int width, int height);
         void geometryPass(RenderPassData& data);
         void lightingPass(RenderPassData& data);
+        void updateLights();
         GLuint createGBufferTexture(int width, int height, GLenum attachment, GLenum format);
         
         GLuint lightSSBO;
@@ -91,7 +98,9 @@ namespace fish
         GLuint gAlbedoSpec;
         GLuint rbo;
         
+        
         VertexGPUData rect;
+        std::optional<DirectionalLight> dirLight;
         Screen& screen;
         TextureManager& textureManager;
         ShaderManager& shaderCache;

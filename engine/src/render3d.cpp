@@ -13,6 +13,7 @@
 #include "fish/world.hpp"
 #include "fish/helpers.hpp"
 #include "fish/lights.hpp"
+#include <optional>
 #include <vector>
 
 namespace fish
@@ -34,6 +35,9 @@ namespace fish
         registry.on_construct<Mesh>().connect<&Renderer3D::onMeshCreate>(this);
         registry.on_destroy<Mesh>().connect<&Renderer3D::onMeshDestroy>(this);
 
+        registry.on_construct<DirectionalLight>().connect<&Renderer3D::onDirLightCreate>(this);
+        registry.on_destroy<DirectionalLight>().connect<&Renderer3D::onDirLightDestroy>(this);
+
         // depthbuffer
         glClipControl(GL_LOWER_LEFT, GL_ZERO_TO_ONE);
         this->initBuffers();
@@ -48,11 +52,38 @@ namespace fish
         this->doRender(width, height);
     }
 
+    void Renderer3D::tick()
+    {
+        auto& registry = world.getRegistry();
+
+        // update lights
+        // auto group = registry.group(entt::get<Node, PointLight, Transform3D>);
+        // FISH_ASSERT(group.size() <= 256, "Cannot have more than 256 PointLights");
+
+        // std::vector<PointLight::GLSL> pointLights (group.size());
+
+        // for (auto& ent : group) {
+        //     auto [_, light, transform] = group.get(ent);
+        //     pointLights.push_back(light.toGL(world.worldSpace3DTransform(ent)));
+        // }
+
+        // glNamedBufferSubData(
+        //     this->lightSSBO,
+        //     0, sizeof(PointLight::GLSL) * pointLights.capacity(),
+        //     pointLights.data()
+        // );
+
+        updateLights();
+    }
+
     void Renderer3D::shutdown()
     {
         auto& registry = world.getRegistry();
         registry.on_construct<Mesh>().disconnect<&Renderer3D::onMeshCreate>(this);
         registry.on_destroy<Mesh>().disconnect<&Renderer3D::onMeshDestroy>(this);
+
+        registry.on_construct<DirectionalLight>().disconnect<&Renderer3D::onDirLightCreate>(this);
+        registry.on_destroy<DirectionalLight>().disconnect<&Renderer3D::onDirLightDestroy>(this);
 
         glDeleteVertexArrays(1, &this->rect.vao);
         glDeleteBuffers(1, &this->rect.vbo);
@@ -64,12 +95,9 @@ namespace fish
     {
         this->rect = Renderer2D::createRect(1.0f);
         glCreateBuffers(1, &this->lightSSBO);
-        glNamedBufferData(this->lightSSBO, sizeof(PointLight::GLSL) * 0, nullptr, GL_STATIC_COPY);
-  
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->lightSSBO);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->lightSSBO);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
+        glBindBufferBase(GL_UNIFORM_BUFFER, 1, this->lightSSBO);
+        glNamedBufferStorage(this->lightSSBO, sizeof(PointLight::GLSL) * MAX_POINTLIGHTS, nullptr, GL_DYNAMIC_STORAGE_BIT);
+        
         // size
         int width;
         int height;
@@ -92,6 +120,18 @@ namespace fish
 
         int status = glCheckNamedFramebufferStatus(this->gBuffer, GL_FRAMEBUFFER);
         FISH_ASSERTF(status == GL_FRAMEBUFFER_COMPLETE, "G-Buffer not FRAMEBUFFER_COMPLETE: {}", status);
+    }
+
+    void Renderer3D::onDirLightCreate(entt::entity entity)
+    {
+        auto& registry = world.getRegistry();
+
+        this->dirLight = registry.get<DirectionalLight>(entity);
+    }
+
+    void Renderer3D::onDirLightDestroy(entt::entity entity)
+    {
+        this->dirLight = std::nullopt;
     }
 
     void Renderer3D::onMeshCreate(entt::entity entity)
@@ -223,22 +263,6 @@ namespace fish
         auto& world = this->services.getService<World>();
         auto& registry = world.getRegistry();
 
-        // update lights
-        auto group = registry.group(entt::get<Node, PointLight, Transform3D>);
-        std::vector<PointLight::GLSL> pointLights (group.size());
-
-        for (auto& ent : group) {
-            auto [_, light, transform] = group.get(ent);
-            pointLights.emplace_back(light.toGL(world.worldSpace3DTransform(ent)));
-        }
-
-        glNamedBufferData(
-            this->lightSSBO,
-            pointLights.size() * sizeof(PointLight::GLSL),
-            pointLights.data(),
-            GL_DYNAMIC_DRAW
-        );
-
         unsigned int shader = this->shaderCache.getShader("3D_GeoPass");
             
         glUseProgram(shader);
@@ -282,15 +306,39 @@ namespace fish
                 textureManager.bind(id, 3);
                 helpers::Uniform::uniformInt(shader, "diffuseMap", 3);
             }
+            
+            // NORMAL
+            std::optional<std::string> normalMapOpt = ent.material.getProperty<std::string>("normalMap");
+
+            if (normalMapOpt.has_value() && !normalMapOpt.value().empty()) {
+                TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                if (ent.material.hasProperty<TextureWrapMode>("normalWrapMode")) {
+                    wrapMode = ent.material.getProperty<TextureWrapMode>("normalWrapMode").value();
+                }
+
+                unsigned int id = textureManager.get(
+                    normalMapOpt.value(), 
+                    TextureFilterMode::LINEAR, 
+                    wrapMode
+                );
+                textureManager.bind(id, 4);
+                helpers::Uniform::uniformInt(shader, "normalMap", 4);
+                helpers::Uniform::uniformInt(shader, "hasNormalMap", 1);
+            } else {
+                helpers::Uniform::uniformInt(shader, "hasNormalMap", 0);
+            }
 
             glBindVertexArray(ent.gpuData.vao);
             glDrawElements(GL_TRIANGLES, ent.mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
             glBindVertexArray(0);
+
+            textureManager.bind(0, 3);
         }
     }
 
     void Renderer3D::lightingPass(Renderer3D::RenderPassData& pass)
     {
+        // render
         unsigned int shader = this->shaderCache.getShader("3D_LightPass");
 
         glUseProgram(shader);
@@ -299,6 +347,11 @@ namespace fish
         textureManager.bind(gNormal, 1);
         textureManager.bind(gAlbedoSpec, 2);
 
+        if (dirLight.has_value()) 
+            helpers::Uniform::uniformDirectionalLight(shader, "dirLight", dirLight.value());
+        else
+            helpers::Uniform::uniformInt(shader, "dirLight.enabled", 0);
+        
         helpers::Uniform::uniformInt(shader, "gPosition", 0);
         helpers::Uniform::uniformInt(shader, "gNormal", 1);
         helpers::Uniform::uniformInt(shader, "gAlbedoSpec", 2);
@@ -309,6 +362,32 @@ namespace fish
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
         glBindVertexArray(0);
         glUseProgram(0);
+    }
+
+    void Renderer3D::updateLights()
+    {
+        auto& registry = this->world.getRegistry();
+        auto group = registry.group(entt::get<Node, PointLight, Transform3D>);
+        FISH_ASSERT(group.size() <= MAX_POINTLIGHTS, "Cannot have more than MAX_POINTLIGHTS pointlights in a scene");
+
+        std::vector<PointLight::GLSL> lights(MAX_POINTLIGHTS);
+        for (unsigned int i = 0; i < MAX_POINTLIGHTS; i++) {
+            if (i >= group.size()) {
+                lights[i] = {
+                    .enabled = false
+                };
+                continue;
+            }
+
+            auto entity = group[i];
+
+            auto& light = group.get<PointLight>(entity);
+            auto glslLight = light.toGL(world.worldSpace3DTransform(entity));
+
+            lights[i] = glslLight;
+        }
+
+        glNamedBufferSubData(this->lightSSBO, 0, sizeof(PointLight::GLSL) * MAX_POINTLIGHTS, lights.data());
     }
 
     GLuint Renderer3D::createGBufferTexture(int width, int height, GLenum attachment, GLenum format)
