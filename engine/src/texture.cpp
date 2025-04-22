@@ -9,7 +9,6 @@
 #include "stb_image.h"
 #include <filesystem>
 #include <format>
-#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -109,9 +108,11 @@ namespace fish
             case TextureWrapMode::MIRROR_CLAMP_TO_EDGE:
                 wrapMode = GL_MIRROR_CLAMP_TO_EDGE;
                 break;
+            default:
+                wrapMode = GL_CLAMP_TO_EDGE;
+                break;
         }
 
-        std::cout << wrapMode << std::endl;
         glTextureParameteri(textureData.textureId, GL_TEXTURE_WRAP_S, wrapMode);
         glTextureParameteri(textureData.textureId, GL_TEXTURE_WRAP_T, wrapMode);
 

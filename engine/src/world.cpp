@@ -31,6 +31,16 @@ namespace fish
             }
     }
 
+    void World::render()
+    {
+        for (const auto& system : this->systems)
+            try {
+                system->render();
+            } catch (std::runtime_error& exception) {
+                std::cout << "Error processing system " << system << " render: " << exception.what() << std::endl;
+            }
+    }
+
     void World::tick()
     {
         for (const auto& system : this->systems)

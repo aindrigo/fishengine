@@ -7,14 +7,16 @@ layout (location = 4) in vec2 inTexCoords;
 
 uniform mat4 model;
 uniform mat4 view;
-uniform mat4 projection;
+uniform mat4 perspective;
 uniform mat4 mvp;
 
+out vec3 fragPos;
 out vec3 fragNormal;
 out vec2 fragTexCoords;
 
 void main()
 {
+    fragPos = vec3(model * vec4(inPos, 1.0));
     fragTexCoords = inTexCoords;
     fragNormal = mat3(transpose(inverse(model))) * inNormal;
     gl_Position = mvp * vec4(inPos, 1.0);

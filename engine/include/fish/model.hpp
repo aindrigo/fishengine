@@ -14,6 +14,11 @@ namespace fish
         glm::vec2 uv;
     };
 
+    struct Vertex2D {
+        glm::vec2 position;
+        glm::vec2 texCoord;
+    };
+
     struct Mesh
     {
         std::vector<Vertex> vertices;

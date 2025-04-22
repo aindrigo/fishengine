@@ -1,4 +1,5 @@
 
+#include "fish/helpers.hpp"
 #include "fish/renderer.hpp"
 #include "GLFW/glfw3.h"
 namespace fish
@@ -28,16 +29,19 @@ namespace fish
         FISH_ASSERTF(status == GL_FRAMEBUFFER_COMPLETE, "Framebuffer status not FRAMEBUFFER_COMPLETE: {}", status);
     }
 
+    GLuint Screen::getColorBuffer() { return this->colorBuffer; }
+    GLuint Screen::getDepthBuffer() { return this->depthBuffer; }
+    GLuint Screen::getFrameBuffer() { return this->frameBuffer; }
+
     void Screen::clearScreen()
     {
         int width;
         int height;
         glfwGetWindowSize(window, &width, &height);
 
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, this->frameBuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-        glBlitFramebuffer
+        glBlitNamedFramebuffer
         (
+            this->frameBuffer, 0,
             0, 0, width, height,
             0, 0, width, height,
             GL_COLOR_BUFFER_BIT, GL_LINEAR
@@ -48,5 +52,4 @@ namespace fish
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
 
-    
 }

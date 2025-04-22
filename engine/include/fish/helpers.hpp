@@ -35,6 +35,34 @@ namespace fish::helpers
                 data.z
             );
         }
+
+        static void uniformUVec3(unsigned int shader, std::string location, glm::vec3 data)
+        {
+            glUniform3ui(
+                glGetUniformLocation(shader, location.c_str()),
+                data.x,
+                data.y,
+                data.z
+            );
+        }
+
+        static void uniformVec2(unsigned int shader, std::string location, glm::vec2 data)
+        {
+            glUniform2f(
+                glGetUniformLocation(shader, location.c_str()),
+                data.x,
+                data.y
+            );
+        }
+
+        static void uniformUVec2(unsigned int shader, std::string location, glm::vec2 data)
+        {
+            glUniform2ui(
+                glGetUniformLocation(shader, location.c_str()),
+                data.x,
+                data.y
+            );
+        }
         static void uniformMatrix4x4(unsigned int shader, std::string location, glm::mat4x4 data)
         {
             glUniformMatrix4fv(
@@ -59,6 +87,14 @@ namespace fish::helpers
         static void uniformInt(unsigned int shader, std::string location, int data)
         {
             glUniform1i(
+                glGetUniformLocation(shader, location.c_str()),
+                data
+            );
+        }
+
+        static void uniformFloat(unsigned int shader, std::string location, float data)
+        {
+            glUniform1f(
                 glGetUniformLocation(shader, location.c_str()),
                 data
             );

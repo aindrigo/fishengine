@@ -1,26 +1,27 @@
 #include "GLFW/glfw3.h"
+#include "fish/model.hpp"
 #include "fish/renderer.hpp"
 #include "fish/helpers.hpp"
 
 namespace fish
 {
     Renderer2D::Renderer2D(Services& services, GLFWwindow* window)
-        : services(services), window(window), shaderCache(services.getService<ShaderCache>()),
+        : services(services), window(window), shaderCache(services.getService<ShaderManager>()),
           textureManager(services.getService<TextureManager>()), world(services.getService<World>())
     {}
 
     void Renderer2D::init()
     {
-        this->createRect();
+        this->rect = createRect();
     }
 
-    void Renderer2D::update()
+    void Renderer2D::render()
     {
         int width;
         int height;
         glfwGetWindowSize(window, &width, &height);
 
-        this->render(width, height);
+        this->doRender(width, height);
     }
 
     void Renderer2D::shutdown()
@@ -30,7 +31,7 @@ namespace fish
         glDeleteBuffers(1, &rect.ebo);
     }
 
-    void Renderer2D::render(int width, int height)
+    void Renderer2D::doRender(int width, int height)
     {
         auto& registry = world.getRegistry();
         auto group = registry.group<Panel>(entt::get<Transform2D, Material>);
@@ -71,14 +72,15 @@ namespace fish
             glUseProgram(0);
         }
     }
-    void Renderer2D::createRect()
+
+    VertexGPUData Renderer2D::createRect(float scale)
     {
-        float scale = 0.5f;
-        float vertices[] = {
-            scale, scale, 0.0f,
-            scale, -scale, 0.0f,
-            -scale,  -scale, 0.0f,
-            -scale, scale, 0.0f
+        VertexGPUData rect = {};
+        Vertex2D vertices[] = {
+            { { -scale, -scale }, { 0.0f, 0.0f } },
+            { { -scale, scale }, { 0.0f, 1.0f } },
+            { { scale, scale, }, { 1.0f, 1.0f } },
+            { { scale, -scale }, { 1.0f, 0.0f } }
         };
 
         int indices[] = {
@@ -94,13 +96,19 @@ namespace fish
         
         glCreateVertexArrays(1, &rect.vao);
 
-        glVertexArrayVertexBuffer(rect.vao, 0, rect.vbo, 0, 3 * sizeof(float));
+        glVertexArrayVertexBuffer(rect.vao, 0, rect.vbo, 0, sizeof(Vertex2D));
+        
         glVertexArrayElementBuffer(rect.vao, rect.ebo);
 
         glEnableVertexArrayAttrib(rect.vao, 0);
+        glEnableVertexArrayAttrib(rect.vao, 1);
 
-        glVertexArrayAttribFormat(rect.vao, 0, 3, GL_FLOAT, GL_FALSE, 0);
+        glVertexArrayAttribFormat(rect.vao, 0, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex2D, position));
+        glVertexArrayAttribFormat(rect.vao, 1, 2, GL_FLOAT, GL_FALSE, offsetof(Vertex2D, texCoord));
 
         glVertexArrayAttribBinding(rect.vao, 0, 0);
+        glVertexArrayAttribBinding(rect.vao, 1, 0);
+
+        return rect;
     }
 }

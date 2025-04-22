@@ -134,7 +134,7 @@ namespace fish
                                 diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
                                 break;
                             case aiTextureMapMode_Wrap:
-                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE; // idk what Wrap means
+                                diffuseWrapMode = TextureWrapMode::CLAMP_TO_BORDER; // idk what Wrap means
                                 break;
                             case aiTextureMapMode_Decal:
                                 diffuseWrapMode = TextureWrapMode::CLAMP_TO_EDGE;
@@ -143,6 +143,7 @@ namespace fish
                                 diffuseWrapMode = TextureWrapMode::MIRRORED_REPEAT;
                                 break;
                             default:
+                                diffuseWrapMode = TextureWrapMode::REPEAT;
                                 break;
                         }
                         model.material = Scene::Material {

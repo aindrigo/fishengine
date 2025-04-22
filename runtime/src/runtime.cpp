@@ -4,6 +4,7 @@
 #include "fish/engineinfo.hpp"
 #include "fish/events.hpp"
 #include "fish/helpers.hpp"
+#include "fish/lights.hpp"
 #include "fish/scenes.hpp"
 #include "fish/transform.hpp"
 #include "fish/userinput.hpp"
@@ -97,6 +98,14 @@ namespace fish
 
             world.addSystem<RuntimeSystem>();
 
+            auto light = world.create();
+            
+            registry.emplace<PointLight>(light, PointLight {
+                .color = { 255, 255, 255, 255 }
+            });
+            auto& lightTransform = registry.emplace<Transform3D>(light);
+            lightTransform.position.z += 5;
+
             events.observe("onCursorMove", [&](auto& cursorEventData) {
                 std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
                 if (!deltaOpt.has_value())
@@ -113,7 +122,7 @@ namespace fish
             });
 
             events.observe("update", [&](auto& updateEventData) {
-                float speed = 205.0f;
+                float speed = 285.0f;
                 glm::vec3 move { 0, 0, 0 };
                 if (userInput.isKeyDown(GLFW_KEY_W))
                     move.z += speed;

@@ -3,10 +3,10 @@
 
 namespace fish
 {
-    class ShaderCache
+    class ShaderManager
     {
     public:
-        ShaderCache(Services& services);
+        ShaderManager(Services& services);
         unsigned int getShader(const std::string& name);
         void shutdown();
     private:

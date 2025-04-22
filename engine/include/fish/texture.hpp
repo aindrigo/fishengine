@@ -32,7 +32,7 @@ namespace fish
     struct TextureFileData {
         std::string path;
         TextureFilterMode filter;
-        TextureWrapMode wrapMode;
+        TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
 
         bool operator==(const TextureFileData& other) const
         {

@@ -69,7 +69,7 @@ namespace fish
         this->services.addServiceData<TextureManager>(TextureManager(services));
         auto& sceneLoader = this->services.addServiceData(SceneLoader(services));
         this->services.addServiceData(UI(services));
-        this->services.addServiceData(ShaderCache(services));
+        this->services.addServiceData(ShaderManager(services));
 
         // init libraries
         glfwSetErrorCallback(glfwErrorCallback);
@@ -81,8 +81,7 @@ namespace fish
         // init engine-related things
         this->initWindow();
         sceneLoader.init();
-        world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
-        world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
+        
         // start loop
         glEnable(GL_DEPTH_TEST);
         glfwSwapInterval(1);
@@ -97,7 +96,7 @@ namespace fish
         this->state = EngineState::NOT_RUNNING;
         
         auto& world = this->services.getService<World>();
-        auto& shaderCache = this->services.getService<ShaderCache>();
+        auto& shaderCache = this->services.getService<ShaderManager>();
 
         // destroy objects
         shaderCache.shutdown();
@@ -165,7 +164,9 @@ namespace fish
         auto& ui = this->services.getService<UI>();
         auto& textureManager = this->services.getService<TextureManager>();
         auto& screen = this->services.addService<Screen>(window);
-        
+        world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
+        world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
+
         float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
@@ -186,8 +187,11 @@ namespace fish
             screen.clearScreen();
 
             events.dispatch("update");
-            // frame logic            
             world.update();
+    
+            // frame logic            
+            world.render();
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glfwSwapBuffers(window);
             glfwPollEvents();
 

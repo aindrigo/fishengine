@@ -1,17 +1,26 @@
 #include "GLFW/glfw3.h"
+#include "entt/entity/fwd.hpp"
 #include "fish/camera.hpp"
+#include "fish/common.hpp"
+#include "fish/engineinfo.hpp"
+#include "fish/material.hpp"
 #include "fish/model.hpp"
+#include "fish/node.hpp"
 #include "fish/renderer.hpp"
 #include "fish/services.hpp"
 #include "fish/texture.hpp"
+#include "fish/transform.hpp"
 #include "fish/world.hpp"
 #include "fish/helpers.hpp"
+#include "fish/lights.hpp"
+#include <vector>
 
 namespace fish
 {
     Renderer3D::Renderer3D(Services& services, GLFWwindow* window)
-        : services(services), window(window), shaderCache(services.getService<ShaderCache>()),
-          textureManager(services.getService<TextureManager>()), world(services.getService<World>())
+        : services(services), window(window), shaderCache(services.getService<ShaderManager>()),
+          textureManager(services.getService<TextureManager>()), world(services.getService<World>()),
+          screen(services.getService<Screen>())
     {}
 
     void Renderer3D::init()
@@ -30,13 +39,13 @@ namespace fish
         this->initBuffers();
     }
 
-    void Renderer3D::update()
+    void Renderer3D::render()
     {
         int width;
         int height;
         glfwGetWindowSize(window, &width, &height);
 
-        this->render(width, height);
+        this->doRender(width, height);
     }
 
     void Renderer3D::shutdown()
@@ -44,98 +53,45 @@ namespace fish
         auto& registry = world.getRegistry();
         registry.on_construct<Mesh>().disconnect<&Renderer3D::onMeshCreate>(this);
         registry.on_destroy<Mesh>().disconnect<&Renderer3D::onMeshDestroy>(this);
+
+        glDeleteVertexArrays(1, &this->rect.vao);
+        glDeleteBuffers(1, &this->rect.vbo);
+        glDeleteBuffers(1, &this->rect.ebo);
+        glDeleteFramebuffers(1, &this->gBuffer);
     }
 
     void Renderer3D::initBuffers()
     {
-        // TODO: tiled deferred rendering stuff
-    }
-    
-    void Renderer3D::render(int width, int height)
-    {
-        glDepthFunc(GL_GREATER); // reversed-z stuff
+        this->rect = Renderer2D::createRect(1.0f);
+        glCreateBuffers(1, &this->lightSSBO);
+        glNamedBufferData(this->lightSSBO, sizeof(PointLight::GLSL) * 0, nullptr, GL_STATIC_COPY);
+  
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, this->lightSSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, this->lightSSBO);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-        auto& engineInfo = this->services.getService<EngineInfo>();
-        if (!engineInfo.camera.has_value())
-            return;
+        // size
+        int width;
+        int height;
+        glfwGetWindowSize(window, &width, &height);
 
-        auto& registry = world.getRegistry();
-        auto& cameraEntity = engineInfo.camera.value();
+        // gbuffer
+        glCreateFramebuffers(1, &gBuffer);
 
-        bool componentsFound = registry.all_of<Camera3D, Transform3D>(cameraEntity);
-        FISH_ASSERT(componentsFound, "Camera3D & Transform3D not found on camera entity");
+        static const unsigned int attachments[] { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+        glNamedFramebufferDrawBuffers(gBuffer, sizeof(attachments) / sizeof(unsigned int), attachments);
 
-        auto [camera, cameraTransform]= registry.get<Camera3D, Transform3D>(cameraEntity);
-        auto& world = services.getService<World>();
+        // textures
+        glCreateTextures(GL_TEXTURE_2D, 1, &this->gDepth);
+        glTextureStorage2D(this->gDepth, 1, GL_DEPTH_COMPONENT32F, width, height);
+        glNamedFramebufferTexture(this->gBuffer, GL_DEPTH_ATTACHMENT, this->gDepth, 0);
 
-        auto group = registry.group<Mesh>(entt::get<VertexGPUData, Material, Transform3D>);
-        glm::mat4 view = cameraTransform.build();
-        glm::mat4 projection = camera.build(static_cast<float>(width) / static_cast<float>(height));
+        this->gPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT0, GL_RGBA16F);
+        this->gNormal = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT1, GL_RGBA16F);
+        this->gAlbedoSpec = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT2, GL_RGBA8);
 
-        for (auto const& ent : group) {
-            auto [mesh, data, material, transform] = group.get(ent);
-            
-            unsigned int shader = this->shaderCache.getShader(material.shader);
-            
-            Transform3D worldSpace = world.worldSpace3DTransform(ent);
-            glUseProgram(shader);
-
-            auto model = worldSpace.build();
-            auto view = cameraTransform.build();
-
-            helpers::Uniform::uniformVec3(
-                shader, 
-                "cameraPosition", 
-                cameraTransform.position
-            );
-
-            helpers::Uniform::uniformMatrix4x4(
-                shader,
-                "model",
-                model
-            );
-
-            helpers::Uniform::uniformMatrix4x4(
-                shader,
-                "view",
-                view
-            );
-            
-            helpers::Uniform::uniformMatrix4x4(
-                shader,
-                "projection",
-                camera.build(static_cast<float>(width) / static_cast<float>(height))
-            );
-
-            helpers::Uniform::uniformMatrix4x4(
-                shader,
-                "mvp",
-                projection * view * model
-            );
-
-            // DIFFUSE
-            {
-                TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
-                if (material.hasProperty<TextureWrapMode>("diffuseWrapMode")) {
-                    wrapMode = material.getProperty<TextureWrapMode>("diffuseWrapMode").value();
-                }
-
-                unsigned int id = textureManager.get(
-                    material.getProperty<std::string>("diffuseMap").value_or("textures/empty.png"), 
-                    TextureFilterMode::LINEAR, 
-                    wrapMode
-                );
-                textureManager.bind(id, 1);
-                helpers::Uniform::uniformInt(shader, "diffuseMap", 1);
-            }
-
-            glBindVertexArray(data.vao);
-            glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
-            glBindVertexArray(0);
-            glUseProgram(0);
-        }
-
-        glDepthFunc(GL_LESS); // reversed-z
+        int status = glCheckNamedFramebufferStatus(this->gBuffer, GL_FRAMEBUFFER);
+        FISH_ASSERTF(status == GL_FRAMEBUFFER_COMPLETE, "G-Buffer not FRAMEBUFFER_COMPLETE: {}", status);
     }
 
     void Renderer3D::onMeshCreate(entt::entity entity)
@@ -187,7 +143,187 @@ namespace fish
 
         VertexGPUData data = registry.get<VertexGPUData>(entity);
 
-        glDeleteBuffers(2, new GLuint[2] { data.ebo, data.vbo });
+        static const GLuint buffers[] = { data.ebo, data.vbo };
+
+        glDeleteBuffers(2, buffers);
         glDeleteVertexArrays(1, &data.vao);
+    }
+
+    void Renderer3D::doRender(int width, int height)
+    {
+        glDepthFunc(GL_GREATER); // reversed-z stuff
+
+        auto& engineInfo = this->services.getService<EngineInfo>();
+        if (!engineInfo.camera.has_value())
+            return;
+
+        auto& registry = world.getRegistry();
+        auto& cameraEntity = engineInfo.camera.value();
+
+        bool componentsFound = registry.all_of<Camera3D, Transform3D>(cameraEntity);
+        FISH_ASSERT(componentsFound, "Camera3D & Transform3D not found on camera entity");
+
+        auto [camera, cameraTransform]= registry.get<Camera3D, Transform3D>(cameraEntity);
+        auto& world = services.getService<World>();
+
+        glm::mat4 view = cameraTransform.build();
+        glm::mat4 perspective = camera.build(static_cast<float>(width) / static_cast<float>(height));
+
+        auto group = registry.group<Mesh>(entt::get<VertexGPUData, Material, Transform3D>);
+        RenderPassData pass = {
+            .width = width,
+            .height = height,
+            .camera = {
+                .entity = cameraEntity,
+                .camera = camera,
+                .worldSpace = world.worldSpace3DTransform(cameraEntity),
+                .perspective = perspective,
+                .view = view
+            }
+        };
+
+        for (auto const& ent : group) {
+            RenderPassData::RenderEntity entity = {
+                .entity = ent,
+                .mesh = group.get<Mesh>(ent),
+                .material = group.get<Material>(ent),
+                .transform = group.get<Transform3D>(ent),
+                .worldSpace = world.worldSpace3DTransform(ent),
+                .gpuData = group.get<VertexGPUData>(ent),
+            };
+
+            entity.model = entity.worldSpace.build();
+            entity.mvp = pass.camera.perspective * pass.camera.view * entity.model;
+            pass.entities.push_back(entity);
+        }
+
+        glBindFramebuffer(GL_FRAMEBUFFER, gBuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->geometryPass(pass);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, screen.getFrameBuffer());
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        this->lightingPass(pass);
+
+        glBlitNamedFramebuffer(
+            gBuffer, screen.getFrameBuffer(),
+            width, height,
+            0, 0,
+            width, height,
+            0, 0,
+            GL_DEPTH_BUFFER_BIT, GL_NEAREST
+        );
+
+        glDepthFunc(GL_LESS); // reversed-z
+    }
+
+    void Renderer3D::geometryPass(Renderer3D::RenderPassData& pass)
+    {
+        auto& engineInfo = this->services.getService<EngineInfo>();
+        auto& world = this->services.getService<World>();
+        auto& registry = world.getRegistry();
+
+        // update lights
+        auto group = registry.group(entt::get<Node, PointLight, Transform3D>);
+        std::vector<PointLight::GLSL> pointLights (group.size());
+
+        for (auto& ent : group) {
+            auto [_, light, transform] = group.get(ent);
+            pointLights.emplace_back(light.toGL(world.worldSpace3DTransform(ent)));
+        }
+
+        glNamedBufferData(
+            this->lightSSBO,
+            pointLights.size() * sizeof(PointLight::GLSL),
+            pointLights.data(),
+            GL_DYNAMIC_DRAW
+        );
+
+        unsigned int shader = this->shaderCache.getShader("3D_GeoPass");
+            
+        glUseProgram(shader);
+        for (auto const& ent : pass.entities) {
+            helpers::Uniform::uniformMatrix4x4(
+                shader,
+                "model",
+                ent.model
+            );
+
+            helpers::Uniform::uniformMatrix4x4(
+                shader,
+                "view",
+                pass.camera.view
+            );
+            
+            helpers::Uniform::uniformMatrix4x4(
+                shader,
+                "perspective",
+                pass.camera.perspective
+            );
+
+            helpers::Uniform::uniformMatrix4x4(
+                shader,
+                "mvp",
+                ent.mvp
+            );
+
+            // DIFFUSE
+            {
+                TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
+                if (ent.material.hasProperty<TextureWrapMode>("diffuseWrapMode")) {
+                    wrapMode = ent.material.getProperty<TextureWrapMode>("diffuseWrapMode").value();
+                }
+
+                unsigned int id = textureManager.get(
+                    ent.material.getProperty<std::string>("diffuseMap").value_or("textures/empty.png"), 
+                    TextureFilterMode::LINEAR, 
+                    wrapMode
+                );
+                textureManager.bind(id, 3);
+                helpers::Uniform::uniformInt(shader, "diffuseMap", 3);
+            }
+
+            glBindVertexArray(ent.gpuData.vao);
+            glDrawElements(GL_TRIANGLES, ent.mesh.indices.size(), GL_UNSIGNED_INT, nullptr);
+            glBindVertexArray(0);
+        }
+    }
+
+    void Renderer3D::lightingPass(Renderer3D::RenderPassData& pass)
+    {
+        unsigned int shader = this->shaderCache.getShader("3D_LightPass");
+
+        glUseProgram(shader);
+
+        textureManager.bind(gPosition, 0);
+        textureManager.bind(gNormal, 1);
+        textureManager.bind(gAlbedoSpec, 2);
+
+        helpers::Uniform::uniformInt(shader, "gPosition", 0);
+        helpers::Uniform::uniformInt(shader, "gNormal", 1);
+        helpers::Uniform::uniformInt(shader, "gAlbedoSpec", 2);
+
+        helpers::Uniform::uniformVec3(shader, "viewPos", pass.camera.worldSpace.position);
+
+        glBindVertexArray(rect.vao);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+        glBindVertexArray(0);
+        glUseProgram(0);
+    }
+
+    GLuint Renderer3D::createGBufferTexture(int width, int height, GLenum attachment, GLenum format)
+    {
+        GLuint result;
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &result);
+        glTextureParameteri(result, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTextureParameteri(result, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTextureParameteri(result, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTextureParameteri(result, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glTextureStorage2D(result, 1, format, width, height);
+        glNamedFramebufferTexture(gBuffer, attachment, result, 0);
+        
+        return result;
     }
 }

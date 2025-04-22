@@ -39,6 +39,7 @@ namespace fish
         Transform2D worldSpace2DTransform(entt::entity entity);
 
         void update();
+        void render();
         void tick();
         void shutdown();
     
