@@ -104,7 +104,7 @@ namespace fish
                 .color = { 255, 255, 255, 255 }
             });
             auto& lightTransform = registry.emplace<Transform3D>(light);
-            lightTransform.position.z -= 5;
+            lightTransform.position.z -= 50;
 
             // auto dirLight = world.create();
             // registry.emplace<DirectionalLight>(dirLight, DirectionalLight {

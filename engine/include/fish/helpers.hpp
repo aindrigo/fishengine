@@ -11,13 +11,16 @@
 #include "glm/gtc/type_ptr.hpp"
 #include "fish/material.hpp"
 #include "glm/matrix.hpp"
+#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <set>
 #include <sstream>
 #include <string>
+#include <vector>
 
 #ifdef FISH_WINDOWS
 #include <windows.h>
@@ -153,6 +156,81 @@ namespace fish::helpers
                         0.0f,    f,  0.0f,  0.0f,
                         0.0f, 0.0f,  0.0f, -1.0f,
                         0.0f, 0.0f, zNear,  0.0f);
+        }
+    };
+
+    class String
+    {
+    public:
+        static std::vector<std::string> splitString(std::string str, const std::string& del)
+        {
+            std::vector<std::string> result;
+
+            size_t pos = 0;
+
+            std::string token;
+            while ((pos = str.find(del)) != std::string::npos) {
+                token = str.substr(0, pos);
+                result.push_back(token);
+                str.erase(0, pos + del.length());
+            }
+
+            result.push_back(str);
+
+            return result;
+        }
+
+        struct StringDelimiterResult {
+            std::string data;
+            bool success;
+        };
+
+        static StringDelimiterResult getStringBetweenDelimiters(const std::string& str, const std::set<char>& startDelimiters, const std::set<char>& endDelimiters)
+        {
+            StringDelimiterResult result;
+            result.success = true;
+
+            bool found;
+            for (size_t i = 0; i < str.size(); i++) {
+                char c = str[i];
+
+                if (!found && startDelimiters.contains(c)) {
+                    found = true;
+                    continue;
+                }
+
+                if (found) {
+                    if (endDelimiters.contains(c)) {
+                        found = false;
+                        break;
+                    }
+
+                    result.data.push_back(c);
+                }
+            }
+
+            if (found) {
+                result.data = "End of quoted text not found";
+                result.success = false;
+            }
+
+            return result;
+        }
+
+        static std::string joinString(std::vector<std::string>& data, const std::string& del)
+        {
+            std::string result;
+
+            for (size_t i = 0; i < data.size(); i++) {
+                std::string& str = data.at(i);
+
+                if (i < data.size() - 1)
+                    result.append(str + del);
+                else
+                    result.append(str);
+            }
+
+            return result;
         }
     };
 

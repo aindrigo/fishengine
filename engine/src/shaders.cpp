@@ -1,6 +1,7 @@
 #include "fish/assets.hpp"
 #include "fish/common.hpp"
 #include "fish/shaders.hpp"
+#include "fish/glsl.hpp"
 #include "fish/services.hpp"
 #include "glad/gl.h"
 #include <filesystem>
@@ -12,7 +13,7 @@
 namespace fish
 {
     ShaderManager::ShaderManager(Services& services)
-        : services(services)
+        : services(services), processor(services.getService<Assets>())
     {}
 
     unsigned int ShaderManager::getShader(const std::string& name)
@@ -41,9 +42,10 @@ namespace fish
         GLuint computeShader = NULL;
         if (assets.exists(vertPath)) {
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
-            std::string vertShaderStr = assets.findAssetString(vertPath);
+            auto result = processor.process(vertPath);
+            FISH_ASSERTF(result.success, "Shader {} did not preprocess successfully (vertex): {}", name, result.data);
 
-            ShaderCompilationResult vertResult = this->compileShader(vertexShader, vertShaderStr);
+            ShaderCompilationResult vertResult = this->compileShader(vertexShader, result.data);
             FISH_ASSERTF(vertResult.success, "Shader {} did not compile successfully (vertex): {}", name, vertResult.message);
 
             glAttachShader(shaderProgram, vertexShader);
@@ -51,9 +53,10 @@ namespace fish
         
         if (assets.exists(fragPath)) {
             fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-            std::string fragShaderStr = assets.findAssetString(fragPath);
-            
-            ShaderCompilationResult fragResult = this->compileShader(fragmentShader, fragShaderStr);
+            auto result = processor.process(fragPath);
+            FISH_ASSERTF(result.success, "Shader {} did not preprocess successfully (fragment): {}", name, result.data);
+
+            ShaderCompilationResult fragResult = this->compileShader(fragmentShader, result.data);
             FISH_ASSERTF(fragResult.success, "Shader {} did not compile successfully (fragment): {}", name, fragResult.message);
 
             glAttachShader(shaderProgram, fragmentShader);

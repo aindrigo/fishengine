@@ -1,3 +1,4 @@
+#include "fish/glsl.hpp"
 #include "fish/services.hpp"
 #include <string>
 
@@ -23,6 +24,7 @@ namespace fish
         };
         
         Services& services;
+        GLSLPreProcessor processor;
         std::unordered_map<std::string, ShaderData> shaders;
     };
 }

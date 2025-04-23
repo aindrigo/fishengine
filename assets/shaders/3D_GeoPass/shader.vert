@@ -16,7 +16,7 @@ out vec2 fragTexCoords;
 
 void main()
 {
-    fragPos = vec3(model * vec4(inPos, 1.0));
+    fragPos = (model * vec4(inPos, 1.0)).xyz;
     fragTexCoords = inTexCoords;
     fragNormal = mat3(transpose(inverse(model))) * inNormal;
     gl_Position = mvp * vec4(inPos, 1.0);
