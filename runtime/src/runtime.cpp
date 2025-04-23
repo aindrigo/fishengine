@@ -104,12 +104,12 @@ namespace fish
                 .color = { 255, 255, 255, 255 }
             });
             auto& lightTransform = registry.emplace<Transform3D>(light);
-            lightTransform.position.z += 5;
+            lightTransform.position.z -= 5;
 
-            auto dirLight = world.create();
-            registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
-                .direction = { 0.0f, -1.0f, 0.5f }
-            });
+            // auto dirLight = world.create();
+            // registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
+            //     .direction = { 0.0f, -1.0f, 0.5f }
+            // });
 
             events.observe("onCursorMove", [&](auto& cursorEventData) {
                 std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
@@ -120,8 +120,8 @@ namespace fish
 
                 mouseRot += glm::vec2(delta.x, delta.y);
                 mouseRot.y = glm::clamp(mouseRot.y, -90.0f, 90.0f);
-                transform.rotation = glm::angleAxis(glm::radians(mouseRot.x), glm::vec3(0, -1.0f, 0)) *
-                                      glm::angleAxis(glm::radians(mouseRot.y), glm::vec3(-1.0f, 0, 0));
+                transform.rotation = glm::angleAxis(glm::radians(mouseRot.y), glm::vec3(1.0f, 0.0f, 0.0f)) *
+                                      glm::angleAxis(glm::radians(mouseRot.x), glm::vec3(0.0f, 1.0f, 0.0f));
                 
                 return eventData;
             });
@@ -149,6 +149,8 @@ namespace fish
                     auto move3d = forward * move.z + right * move.x + up * move.y;
 
                     transform.position += engineInfo.deltaTime * move3d;
+
+                    std::cout << std::format("{} {} {}", transform.position.x, transform.position.y, transform.position.z) << std::endl;
                 }
                 return updateEventData;
             });

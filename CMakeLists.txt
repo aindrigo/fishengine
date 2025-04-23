@@ -27,6 +27,7 @@ add_vendor(steamworks)
 add_vendor(json)
 add_vendor(assimp)
 add_vendor(stb)
+add_vendor(imgui)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/common)
 add_subdirectory(${PROJECT_SOURCE_DIR}/engine)

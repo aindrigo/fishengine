@@ -10,6 +10,7 @@ set(FISH_ENGINE_DEPS
     assimp
     stb
     nlohmann_json
+    imgui
 )
 
 add_library(fish_engine STATIC ${FISH_ENGINE_SOURCES})

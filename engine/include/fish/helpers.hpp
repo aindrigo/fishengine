@@ -10,6 +10,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "fish/material.hpp"
+#include "glm/matrix.hpp"
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -29,11 +30,10 @@ namespace fish::helpers
     public:
         static void uniformVec3(unsigned int shader, std::string location, glm::vec3 data)
         {
-            glUniform3f(
+            glUniform3fv(
                 glGetUniformLocation(shader, location.c_str()),
-                data.x,
-                data.y,
-                data.z
+                1,
+                glm::value_ptr(data)
             );
         }
 
@@ -141,7 +141,7 @@ namespace fish::helpers
             result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
             result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
             result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
-            return result;
+            return glm::transpose(result);
         }
 
         // https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/

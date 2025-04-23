@@ -21,5 +21,5 @@ void main()
     }
 
     gAlbedoSpec.rgb = texture(diffuseMap, fragTexCoords).rgb;
-    gAlbedoSpec.a = 8.0f;
+    gAlbedoSpec.a = 32.0f;
 } 

@@ -15,13 +15,14 @@ namespace fish
     
     struct Transform3D {
         glm::vec3 position;
+        glm::vec3 pivotPoint;
         glm::quat rotation;
         glm::vec3 scale { 1, 1, 1 };
 
         glm::vec3 forward()
         {
             return glm::vec3(
-                (rotation * glm::vec3(-1.0f, 0.0f, 0.0f)).z,
+                (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z,
                 0,
                 (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z
             );
@@ -32,15 +33,21 @@ namespace fish
             return glm::vec3(
                 (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z,
                 0,
-                (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z
+                (rotation * glm::vec3(-1.0f, 0.0f, 0.0f)).z
             );
         }
         glm::mat4 build() 
         {
-            glm::mat4 rotationMatrix = glm::mat4_cast(glm::inverse(rotation));
-            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0), position);
+            glm::vec3 pivot = pivotPoint;
+
+            glm::mat4 pivotFrom = glm::translate(glm::mat4(1.0), pivot);
+            glm::mat4 pivotTo = glm::translate(glm::mat4(1.0), -pivot);
+
             glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0), scale);
-            return rotationMatrix * translationMatrix * scalingMatrix;
+            glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0), position);
+            
+            return pivotFrom * rotationMatrix * scalingMatrix * pivotTo * translationMatrix;
         }
     };
 
