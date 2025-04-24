@@ -33,10 +33,9 @@ namespace fish::helpers
     public:
         static void uniformVec3(unsigned int shader, std::string location, glm::vec3 data)
         {
-            glUniform3fv(
+            glUniform3f(
                 glGetUniformLocation(shader, location.c_str()),
-                1,
-                glm::value_ptr(data)
+                data.x, data.y, data.z
             );
         }
 

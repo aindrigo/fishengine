@@ -22,7 +22,7 @@ namespace fish
         glm::vec3 forward()
         {
             return glm::vec3(
-                (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z,
+                (rotation * glm::vec3(-1.0f, 0.0f, 0.0f)).z,
                 0,
                 (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z
             );
@@ -31,17 +31,16 @@ namespace fish
         glm::vec3 right()
         {
             return glm::vec3(
-                (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z,
+                (rotation * glm::vec3(0.0f, 0.0f, -1.0f)).z,
                 0,
-                (rotation * glm::vec3(-1.0f, 0.0f, 0.0f)).z
+                (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z
             );
         }
         glm::mat4 build() 
         {
-            glm::vec3 pivot = pivotPoint;
 
-            glm::mat4 pivotFrom = glm::translate(glm::mat4(1.0), pivot);
-            glm::mat4 pivotTo = glm::translate(glm::mat4(1.0), -pivot);
+            glm::mat4 pivotFrom = glm::translate(glm::mat4(1.0), pivotPoint + position);
+            glm::mat4 pivotTo = glm::translate(glm::mat4(1.0), -(pivotPoint + position));
 
             glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0), scale);
             glm::mat4 rotationMatrix = glm::mat4_cast(rotation);

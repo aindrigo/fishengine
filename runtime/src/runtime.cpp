@@ -98,18 +98,18 @@ namespace fish
 
             world.addSystem<RuntimeSystem>();
 
-            auto light = world.create();
+            // auto light = world.create();
             
-            registry.emplace<PointLight>(light, PointLight {
-                .color = { 255, 255, 255, 255 }
-            });
-            auto& lightTransform = registry.emplace<Transform3D>(light);
-            lightTransform.position.z -= 50;
-
-            // auto dirLight = world.create();
-            // registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
-            //     .direction = { 0.0f, -1.0f, 0.5f }
+            // registry.emplace<PointLight>(light, PointLight {
+            //     .color = { 255, 255, 255, 255 }
             // });
+            // auto& lightTransform = registry.emplace<Transform3D>(light);
+            // lightTransform.position.z -= 50;
+
+            auto dirLight = world.create();
+            registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
+                .direction = { 0.0f, -1.0f, 0.5f }
+            });
 
             events.observe("onCursorMove", [&](auto& cursorEventData) {
                 std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
@@ -120,8 +120,8 @@ namespace fish
 
                 mouseRot += glm::vec2(delta.x, delta.y);
                 mouseRot.y = glm::clamp(mouseRot.y, -90.0f, 90.0f);
-                transform.rotation = glm::angleAxis(glm::radians(mouseRot.y), glm::vec3(1.0f, 0.0f, 0.0f)) *
-                                      glm::angleAxis(glm::radians(mouseRot.x), glm::vec3(0.0f, 1.0f, 0.0f));
+                transform.rotation = glm::angleAxis(glm::radians(mouseRot.x), glm::vec3(0.0f, -1.0f, 0.0f)) *
+                                      glm::angleAxis(glm::radians(mouseRot.y), glm::vec3(-1.0f, 0.0f, 0.0f));
                 
                 return eventData;
             });
@@ -130,17 +130,17 @@ namespace fish
                 float speed = 285.0f;
                 glm::vec3 move { 0, 0, 0 };
                 if (userInput.isKeyDown(GLFW_KEY_W))
-                    move.z += speed;
-                if (userInput.isKeyDown(GLFW_KEY_S))
                     move.z -= speed;
+                if (userInput.isKeyDown(GLFW_KEY_S))
+                    move.z += speed;
                 if (userInput.isKeyDown(GLFW_KEY_A))
-                    move.x += speed;
-                if (userInput.isKeyDown(GLFW_KEY_D))
                     move.x -= speed;
+                if (userInput.isKeyDown(GLFW_KEY_D))
+                    move.x += speed;
                 if (userInput.isKeyDown(GLFW_KEY_SPACE))
-                    move.y -= speed;
-                if (userInput.isKeyDown(GLFW_KEY_LEFT_SHIFT))
                     move.y += speed;
+                if (userInput.isKeyDown(GLFW_KEY_LEFT_SHIFT))
+                    move.y -= speed;
                 
                 if (move.x != 0 || move.y != 0 || move.z != 0) {
                     auto forward = transform.forward();

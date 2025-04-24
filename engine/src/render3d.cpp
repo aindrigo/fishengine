@@ -13,6 +13,7 @@
 #include "fish/world.hpp"
 #include "fish/helpers.hpp"
 #include "fish/lights.hpp"
+#include "glm/matrix.hpp"
 #include <optional>
 #include <vector>
 
@@ -106,7 +107,7 @@ namespace fish
         // gbuffer
         glCreateFramebuffers(1, &gBuffer);
 
-        static const unsigned int attachments[] { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+        static const unsigned int attachments[] { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
         glNamedFramebufferDrawBuffers(gBuffer, sizeof(attachments) / sizeof(unsigned int), attachments);
 
         // textures
@@ -114,9 +115,10 @@ namespace fish
         glTextureStorage2D(this->gDepth, 1, GL_DEPTH_COMPONENT32F, width, height);
         glNamedFramebufferTexture(this->gBuffer, GL_DEPTH_ATTACHMENT, this->gDepth, 0);
 
-        this->gPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT0, GL_RGBA16F);
-        this->gNormal = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT1, GL_RGBA16F);
-        this->gAlbedoSpec = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT2, GL_RGBA8);
+        this->gPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT0, GL_RGB16F);
+        this->gNormal = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT1, GL_RGB16F);
+        this->gAlbedoSpec = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT2, GL_RGB8);
+        this->gModelPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT3, GL_RGB16F);
 
         int status = glCheckNamedFramebufferStatus(this->gBuffer, GL_FRAMEBUFFER);
         FISH_ASSERTF(status == GL_FRAMEBUFFER_COMPLETE, "G-Buffer not FRAMEBUFFER_COMPLETE: {}", status);
@@ -203,10 +205,12 @@ namespace fish
         bool componentsFound = registry.all_of<Camera3D, Transform3D>(cameraEntity);
         FISH_ASSERT(componentsFound, "Camera3D & Transform3D not found on camera entity");
 
-        auto [camera, cameraTransform]= registry.get<Camera3D, Transform3D>(cameraEntity);
+        auto& camera = registry.get<Camera3D>(cameraEntity);
         auto& world = services.getService<World>();
 
-        glm::mat4 view = cameraTransform.build();
+        auto cameraWorldTransform = world.worldSpace3DTransform(cameraEntity);
+        glm::mat4 view = glm::inverse(cameraWorldTransform.build());
+
         glm::mat4 perspective = camera.build(static_cast<float>(width) / static_cast<float>(height));
 
         auto group = registry.group<Mesh>(entt::get<VertexGPUData, Material, Transform3D>);
@@ -216,11 +220,13 @@ namespace fish
             .camera = {
                 .entity = cameraEntity,
                 .camera = camera,
-                .worldSpace = world.worldSpace3DTransform(cameraEntity),
+                .worldSpace = cameraWorldTransform,
                 .perspective = perspective,
                 .view = view
             }
         };
+
+        
 
         for (auto const& ent : group) {
             RenderPassData::RenderEntity entity = {
@@ -291,6 +297,12 @@ namespace fish
                 ent.mvp
             );
 
+            helpers::Uniform::uniformVec3(
+                shader,
+                "position",
+                ent.worldSpace.position
+            );
+
             // DIFFUSE
             {
                 TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
@@ -346,6 +358,7 @@ namespace fish
         textureManager.bind(gPosition, 0);
         textureManager.bind(gNormal, 1);
         textureManager.bind(gAlbedoSpec, 2);
+        textureManager.bind(gModelPosition, 3);
 
         if (dirLight.has_value()) 
             helpers::Uniform::uniformDirectionalLight(shader, "dirLight", dirLight.value());
@@ -355,6 +368,7 @@ namespace fish
         helpers::Uniform::uniformInt(shader, "gPosition", 0);
         helpers::Uniform::uniformInt(shader, "gNormal", 1);
         helpers::Uniform::uniformInt(shader, "gAlbedoSpec", 2);
+        helpers::Uniform::uniformInt(shader, "gModelPosition", 3);
 
         helpers::Uniform::uniformVec3(shader, "viewPos", pass.camera.worldSpace.position);
 

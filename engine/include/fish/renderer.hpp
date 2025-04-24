@@ -96,6 +96,7 @@ namespace fish
         GLuint gPosition;
         GLuint gNormal;
         GLuint gAlbedoSpec;
+        GLuint gModelPosition;
         GLuint rbo;
         
         

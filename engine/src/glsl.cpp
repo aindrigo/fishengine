@@ -3,7 +3,6 @@
 #include "fish/helpers.hpp"
 #include <filesystem>
 #include <format>
-#include <iostream>
 #include <string>
 #include <vector>
 
