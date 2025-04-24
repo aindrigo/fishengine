@@ -107,7 +107,7 @@ namespace fish
         // gbuffer
         glCreateFramebuffers(1, &gBuffer);
 
-        static const unsigned int attachments[] { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3 };
+        static const unsigned int attachments[] { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
         glNamedFramebufferDrawBuffers(gBuffer, sizeof(attachments) / sizeof(unsigned int), attachments);
 
         // textures
@@ -117,8 +117,7 @@ namespace fish
 
         this->gPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT0, GL_RGB16F);
         this->gNormal = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT1, GL_RGB16F);
-        this->gAlbedoSpec = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT2, GL_RGB8);
-        this->gModelPosition = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT3, GL_RGB16F);
+        this->gAlbedoSpec = createGBufferTexture(width, height, GL_COLOR_ATTACHMENT2, GL_RGB16F);
 
         int status = glCheckNamedFramebufferStatus(this->gBuffer, GL_FRAMEBUFFER);
         FISH_ASSERTF(status == GL_FRAMEBUFFER_COMPLETE, "G-Buffer not FRAMEBUFFER_COMPLETE: {}", status);
@@ -297,12 +296,6 @@ namespace fish
                 ent.mvp
             );
 
-            helpers::Uniform::uniformVec3(
-                shader,
-                "position",
-                ent.worldSpace.position
-            );
-
             // DIFFUSE
             {
                 TextureWrapMode wrapMode = TextureWrapMode::CLAMP_TO_EDGE;
@@ -358,7 +351,6 @@ namespace fish
         textureManager.bind(gPosition, 0);
         textureManager.bind(gNormal, 1);
         textureManager.bind(gAlbedoSpec, 2);
-        textureManager.bind(gModelPosition, 3);
 
         if (dirLight.has_value()) 
             helpers::Uniform::uniformDirectionalLight(shader, "dirLight", dirLight.value());

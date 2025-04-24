@@ -1,3 +1,5 @@
+#include <math.glsl>
+
 struct PointLight
 {
     vec4 position;
@@ -15,23 +17,61 @@ struct DirectionalLight
 
 struct Material
 {
+    vec3 albedo;
     float metallic;
     float roughness;
 };
 
-layout(std140, binding = 1) uniform lightSSBO {
-    PointLight pointLights[256];
+struct ObjectData
+{
+    vec3 fragPos;
+    vec3 normal;
+    vec3 viewDir;
+    vec3 viewPos;
 };
 
-vec3 calcPointLight(PointLight light, vec3 normal, vec3 albedo, vec3 fragPos, vec3 viewDir, Material material)
+struct LightCalculationData
 {
-    vec3 lightDir = normalize(light.position.xyz - fragPos);
+    vec3 N;
+    vec3 V;
+};
 
-    return vec3(0.0);
+vec3 calcPbr(vec3 L, vec3 H, float atten, vec3 color, LightCalculationData calcData, Material mat)
+{
+    vec3 radiance = color * 128.0f * atten;
+
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, mat.albedo, mat.metallic);
+
+    vec3 F = fresnelSchlick(max(dot(H, calcData.V), 0.0), F0);
+    float NDF = distributionGGX(calcData.N, H, mat.roughness);
+    float G = geometrySmith(calcData.N, calcData.V, L, mat.roughness);
+
+    vec3 numerator = NDF * G * F;
+    float denom = 4.0 * max(dot(calcData.N, calcData.V), 0.0) * max(dot(calcData.N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denom;
+
+    vec3 k5 = F;
+    vec3 kD = vec3(1.0) - k5;
+
+    kD *= 1.0 - mat.metallic;
+
+    float NdotL = max(dot(calcData.N, L), 0.0);
+
+    return (kD * mat.albedo / PI + specular) * radiance * NdotL;
 }
 
-vec3 calcDirLight(DirectionalLight light, vec3 normal, vec3 albedo, vec3 viewDir, Material material)
+vec3 calcPointLight(PointLight light, LightCalculationData calcData, ObjectData obj, Material mat)
 {
-    vec3 lightDir = normalize(-light.direction);
-    return vec3(0.0);
+    vec3 L = normalize(light.position.xyz - obj.fragPos);
+    vec3 H = normalize(calcData.V + L);
+    float distance = length(light.position.xyz - obj.fragPos);
+    float atten = 1.0 / ((distance * distance));
+
+    return calcPbr(L, H, atten, light.color.rgb, calcData, mat);
+}
+
+vec3 calcDirLight(DirectionalLight light, LightCalculationData calcData, ObjectData obj, Material mat)
+{
+    return calcPbr(light.direction, normalize(calcData.V), 0.1, light.color.rgb, calcData, mat);
 }

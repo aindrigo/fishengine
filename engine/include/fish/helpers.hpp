@@ -1,13 +1,17 @@
 #pragma once
 
 #include "assimp/matrix4x4.h"
+#include "assimp/quaternion.h"
+#include "assimp/vector3.h"
 #include "fish/common.hpp"
 #include "fish/lights.hpp"
 #include "glad/gl.h"
 
 #include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/quaternion_float.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
+#include "glm/fwd.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "fish/material.hpp"
 #include "glm/matrix.hpp"
@@ -33,9 +37,10 @@ namespace fish::helpers
     public:
         static void uniformVec3(unsigned int shader, std::string location, glm::vec3 data)
         {
-            glUniform3f(
+            glUniform3fv(
                 glGetUniformLocation(shader, location.c_str()),
-                data.x, data.y, data.z
+                1,
+                &data[0]
             );
         }
 
@@ -137,13 +142,16 @@ namespace fish::helpers
                 // the symmetry... its beautiful...
         }
 
-        static glm::mat4 toGLM(aiMatrix4x4& matrix) {
-            glm::mat4 result;
-            result[0][0] = matrix.a1; result[1][0] = matrix.a2; result[2][0] = matrix.a3; result[3][0] = matrix.a4;
-            result[0][1] = matrix.b1; result[1][1] = matrix.b2; result[2][1] = matrix.b3; result[3][1] = matrix.b4;
-            result[0][2] = matrix.c1; result[1][2] = matrix.c2; result[2][2] = matrix.c3; result[3][2] = matrix.c4;
-            result[0][3] = matrix.d1; result[1][3] = matrix.d2; result[2][3] = matrix.d3; result[3][3] = matrix.d4;
-            return glm::transpose(result);
+        static glm::mat4 toGLM(const aiMatrix4x4& matrix) {
+            return glm::transpose(glm::make_mat4(&matrix.a1));
+        }
+
+        static glm::vec3 toGLM(const aiVector3D& vec) {
+            return glm::vec3(vec.x, vec.y, vec.z);
+        }
+
+        static glm::quat toGLM(const aiQuaternion& quat) {
+            return glm::quat(quat.w, quat.x, quat.y, quat.z);
         }
 
         // https://nlguillemot.wordpress.com/2016/12/07/reversed-z-in-opengl/

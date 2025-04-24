@@ -11,9 +11,12 @@ uniform DirectionalLight dirLight;
 uniform sampler2D gPosition;
 uniform sampler2D gNormal;
 uniform sampler2D gAlbedoSpec;
-uniform sampler2D gModelPosition;
 
 uniform vec3 viewPos;
+
+layout(std140, binding = 1) uniform lightSSBO {
+    PointLight pointLights[256];
+};
 
 
 void main()
@@ -21,18 +24,26 @@ void main()
     const vec4 albedoSpec = texture(gAlbedoSpec, fragTexCoords);
     const vec3 fragPos = texture(gPosition, fragTexCoords).rgb;
     const vec3 normal = texture(gNormal, fragTexCoords).rgb;
-    const vec3 modelPos = texture(gModelPosition, fragTexCoords).rgb;
     const vec3 albedo = albedoSpec.rgb;
-    const vec3 viewDir = normalize(viewPos - fragPos);
+
+    ObjectData obj;
+    obj.fragPos = fragPos;
+    obj.normal = normal;
+    obj.viewPos = viewPos;
 
     Material mat;
-    mat.roughness = 16.0f;
-    mat.metallic = 2.0f;
+    mat.albedo = albedo;
+    mat.roughness = 0.5f;
+    mat.metallic = 1.0f;
+
+    LightCalculationData calcData;
+    calcData.N = obj.normal;
+    calcData.V = normalize(obj.viewPos - obj.fragPos);
 
     vec3 lightColor = albedo * 0.1;
 
     if (dirLight.enabled) {
-        //lightColor += calcDirLight(dirLight, normal, albedo, viewDir, mat);
+        lightColor += calcDirLight(dirLight, calcData, obj, mat);
     }
 
     for (uint i = 0; i < pointLights.length(); i++) {
@@ -40,8 +51,13 @@ void main()
         if (light.enabled == 0)
             continue;
         
-        //lightColor += calcPointLight(light, normal, albedo, fragPos, viewDir, mat);
+        lightColor += calcPointLight(light, calcData, obj, mat);
     }
 
-    FragColor = vec4(albedo, 1.0);
+    lightColor /= lightColor + vec3(1.0);
+
+    vec3 result = lightColor;
+    result = pow(result, vec3(1.0 / 2.2));
+
+    FragColor = vec4(lightColor, 1.0);
 } 

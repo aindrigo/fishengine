@@ -14,7 +14,7 @@ namespace fish
         int width;
         int height;
         glfwGetWindowSize(window, &width, &height);
-
+        
         glCreateTextures(GL_TEXTURE_2D, 1, &this->colorBuffer);
         glTextureStorage2D(this->colorBuffer, 1, GL_SRGB8_ALPHA8, width, height);
 

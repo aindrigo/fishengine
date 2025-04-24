@@ -31,7 +31,7 @@ namespace fish
         glm::vec3 right()
         {
             return glm::vec3(
-                (rotation * glm::vec3(0.0f, 0.0f, -1.0f)).z,
+                (rotation * glm::vec3(0.0f, 0.0f, 1.0f)).z,
                 0,
                 (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z
             );

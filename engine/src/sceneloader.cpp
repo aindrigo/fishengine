@@ -5,26 +5,28 @@
 #include "assimp/material.h"
 #include "assimp/mesh.h"
 #include "assimp/postprocess.h"
+#include "assimp/quaternion.h"
 #include "assimp/scene.h"
 #include "assimp/types.h"
+#include "assimp/vector3.h"
 #include "fish/assets.hpp"
+#include "fish/common.hpp"
 #include "fish/helpers.hpp"
 #include "fish/material.hpp"
 #include "fish/model.hpp"
 #include "fish/scenes.hpp"
 #include "fish/services.hpp"
 #include "fish/texture.hpp"
+#include "fish/transform.hpp"
 #include "fish/world.hpp"
-#include "glm/ext/matrix_float4x4.hpp"
 #include "glm/ext/quaternion_float.hpp"
 #include "glm/ext/vector_float2.hpp"
 #include "glm/ext/vector_float3.hpp"
-#include "glm/ext/vector_float4.hpp"
-#include "glm/gtc/quaternion.hpp"
 #include <format>
 #include <stdexcept>
 #include <string>
 #define GLM_ENABLE_EXPERIMENTAL
+#include "glm/gtx/string_cast.hpp"
 #include "glm/gtx/matrix_decompose.hpp"
 #include <filesystem>
 #include <vector>
@@ -97,27 +99,25 @@ namespace fish
             auto child = node->mChildren[i];
             processNode(child, assimpScene, scene);
         }
-
-        glm::mat4 matrix = helpers::Math::toGLM(node->mTransformation);
+        
+        auto matrix = node->mTransformation;
         {
             aiNode* next = node->mParent;
 
             while (next != nullptr) {
-                matrix *= helpers::Math::toGLM(next->mTransformation);
+                matrix = next->mTransformation * matrix;
                 next = next->mParent;
             }
         }
 
-        glm::vec3 position;
-        glm::quat orientation;
-        glm::vec3 scale;
-        glm::vec3 skew;
-        glm::vec4 persp;
-        glm::decompose(matrix, scale, orientation, position, skew, persp);
+        aiVector3D position;
+        aiQuaternion rotation;
+        aiVector3D scale;
+
+        matrix.Decompose(scale, rotation, position);
 
 
         for (int i = 0; i < node->mNumMeshes; i++) {
-
             auto assimpMeshId = node->mMeshes[i];
             auto assimpMesh = assimpScene->mMeshes[assimpMeshId];
 
@@ -126,9 +126,9 @@ namespace fish
             Scene::Model model = {
                 .vertices = std::vector<Vertex>(assimpMesh->mNumVertices),
                 .indices = std::vector<unsigned int>(),
-                .position = position,
-                .rotation = glm::eulerAngles(orientation),
-                .scale = scale
+                .position = helpers::Math::toGLM(position),
+                .rotation = helpers::Math::toGLM(rotation),
+                .scale = helpers::Math::toGLM(scale) * 0.1f
             };
 
             for (unsigned int i = 0; i < assimpMesh->mNumVertices; i++) {
@@ -161,15 +161,15 @@ namespace fish
                     }
 
                     // normal
-                    aiString normalPath;
-                    aiTextureMapMode normalMapMode;
-                    material->GetTexture(aiTextureType_NORMALS, 0, &normalPath, NULL, NULL, NULL, NULL, &normalMapMode);
-                    if (normalPath.length > 0) {
-                        TextureWrapMode normalWrapMode = assimpWrapToFishWrap(normalMapMode);
-                        sceneMat.normalMap = normalPath.C_Str();
+                    if (material->GetTextureCount(aiTextureType_HEIGHT) > 0) {
+                        aiString path;
+                        aiTextureMapMode mapMode;
+                        material->GetTexture(aiTextureType_HEIGHT, 0, &path, NULL, NULL, NULL, NULL, &mapMode);
+                        
+                        TextureWrapMode normalWrapMode = assimpWrapToFishWrap(mapMode);
+                        sceneMat.normalMap = path.C_Str();
                         sceneMat.normalWrapMode = normalWrapMode;
                     }
-
                     model.material = sceneMat;
                 }
             }

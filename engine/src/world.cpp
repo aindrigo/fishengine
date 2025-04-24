@@ -132,7 +132,7 @@ namespace fish
 
             auto& transform = registry.get<Transform3D>(nextNode.me);
             result.position += transform.position;
-            result.rotation += transform.rotation;
+            result.rotation *= transform.rotation;
             result.scale *= transform.scale;
         }
 

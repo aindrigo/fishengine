@@ -9,18 +9,26 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 perspective;
 uniform mat4 mvp;
-uniform vec3 position;
+uniform bool hasNormalMap;
 
 out vec3 fragPos;
 out vec3 modelPosition;
 out vec3 fragNormal;
 out vec2 fragTexCoords;
-
+out mat3 TBN;
 void main()
 {
     fragPos = (model * vec4(inPos, 1.0)).xyz;
     fragTexCoords = inTexCoords;
     fragNormal = mat3(transpose(inverse(model))) * inNormal;
-    modelPosition = position;
+
+    if (hasNormalMap) {
+        TBN = transpose(mat3(
+            normalize(vec3(model * vec4(inTangent, 0.0))),
+            normalize(vec3(model * vec4(inBitangent, 0.0))),
+            normalize(vec3(model * vec4(fragNormal, 0.0)))
+        ));
+    }
+
     gl_Position = mvp * vec4(inPos, 1.0);
 }

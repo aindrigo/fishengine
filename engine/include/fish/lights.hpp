@@ -9,7 +9,7 @@ namespace fish
     struct PointLight {
         float constant = 1.0f;
         float linear = 0.09f;
-        float quadratic = 0.00032f;
+        float quadratic = 0.032f;
         float intensity = 2.0f;
         Color color;
 

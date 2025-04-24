@@ -18,8 +18,10 @@
 #include "glm/trigonometric.hpp"
 #include "nlohmann/json.hpp" // IWYU pragma: keep
 #include "nlohmann/json_fwd.hpp"
+#include <cstdlib>
 #include <filesystem>
 #include <optional>
+#include <random>
 #include <string>
 
 namespace fish
@@ -98,18 +100,28 @@ namespace fish
 
             world.addSystem<RuntimeSystem>();
 
-            // auto light = world.create();
-            
-            // registry.emplace<PointLight>(light, PointLight {
-            //     .color = { 255, 255, 255, 255 }
-            // });
-            // auto& lightTransform = registry.emplace<Transform3D>(light);
-            // lightTransform.position.z -= 50;
+            std::random_device rd;
+            std::uniform_int_distribution<> distr(-50, 50);
+            std::uniform_int_distribution<unsigned char> distr_color(0, 255);
+            std::uniform_int_distribution<> distr_y(0, 50);
+            std::mt19937 gen(rd());
 
-            auto dirLight = world.create();
-            registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
-                .direction = { 0.0f, -1.0f, 0.5f }
-            });
+            for (int i = 0; i < 128; i++) {
+                auto light = world.create();
+            
+                registry.emplace<PointLight>(light, PointLight {
+                    .color = { distr_color(gen), distr_color(gen), distr_color(gen), 255 }
+                });
+                auto& lightTransform = registry.emplace<Transform3D>(light);
+                lightTransform.position.x = distr(gen);
+                lightTransform.position.y = distr_y(gen);
+                lightTransform.position.z = distr(gen);
+            }
+
+            // auto dirLight = world.create();
+            // registry.emplace<DirectionalLight>(dirLight, DirectionalLight {
+            //     .direction = { 0.0f, -1.0f, 0.5f }
+            // });
 
             events.observe("onCursorMove", [&](auto& cursorEventData) {
                 std::optional<glm::vec2> deltaOpt = cursorEventData.template getProperty<glm::vec2>("delta");
@@ -127,7 +139,7 @@ namespace fish
             });
 
             events.observe("update", [&](auto& updateEventData) {
-                float speed = 285.0f;
+                float speed = 28.0f;
                 glm::vec3 move { 0, 0, 0 };
                 if (userInput.isKeyDown(GLFW_KEY_W))
                     move.z -= speed;
@@ -149,8 +161,6 @@ namespace fish
                     auto move3d = forward * move.z + right * move.x + up * move.y;
 
                     transform.position += engineInfo.deltaTime * move3d;
-
-                    std::cout << std::format("{} {} {}", transform.position.x, transform.position.y, transform.position.z) << std::endl;
                 }
                 return updateEventData;
             });
