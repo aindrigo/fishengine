@@ -133,7 +133,7 @@ namespace fish
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         
         this->window = glfwCreateWindow(
-            800, 600, 
+            initData.width, initData.height, 
             std::format("{} v{}", initData.name, initData.version.str()).c_str(), 
             nullptr, nullptr
         );

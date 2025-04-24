@@ -56,7 +56,9 @@ namespace fish
 
         EngineInitData data = {
             .name = name,
-            .version = version
+            .version = version,
+            .width = 1200,
+            .height = 800
         };
 
 #ifdef FISH_STEAM
@@ -103,7 +105,7 @@ namespace fish
             std::random_device rd;
             std::uniform_int_distribution<> distr(-50, 50);
             std::uniform_int_distribution<unsigned char> distr_color(0, 255);
-            std::uniform_int_distribution<> distr_y(0, 50);
+            std::uniform_int_distribution<> distr_y(0, 100);
             std::mt19937 gen(rd());
 
             for (int i = 0; i < 128; i++) {

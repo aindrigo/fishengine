@@ -11,6 +11,8 @@ namespace fish
     struct EngineInitData {
         std::string name;
         Version version;
+        unsigned int width = 800;
+        unsigned int height = 600;
 #if FISH_STEAM
         unsigned int steamAppId;
 #endif
