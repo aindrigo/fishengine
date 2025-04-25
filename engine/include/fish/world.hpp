@@ -34,6 +34,7 @@ namespace fish
 
         entt::entity create(entt::entity parent = entt::null);
         entt::entity createPanel();
+        void destroy(entt::entity entity);
         
         Transform3D worldSpace3DTransform(entt::entity entity);
         Transform2D worldSpace2DTransform(entt::entity entity);

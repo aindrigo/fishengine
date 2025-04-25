@@ -2,6 +2,8 @@
 
 #include <string>
 #include "GLFW/glfw3.h"
+#include "engineinfo.hpp"
+#include "fish/engineinfo.hpp"
 #include "fish/services.hpp"
 #include "fish/version.hpp"
 #include "services.hpp"
@@ -10,6 +12,7 @@ namespace fish
 {
     struct EngineInitData {
         std::string name;
+        EngineRunType runType = EngineRunType::NORMAL;
         Version version;
         unsigned int width = 800;
         unsigned int height = 600;
@@ -34,7 +37,8 @@ namespace fish
         void initSteam();
 #endif
         void initWindow();
-        
+
+        bool shouldLoopContinue();
         void doLoop();
         enum struct EngineState { RUNNING, NOT_RUNNING };
 

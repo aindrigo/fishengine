@@ -22,3 +22,9 @@
 [submodule "vendor/imgui/imgui"]
 	path = vendor/imgui/imgui
 	url = https://github.com/ocornut/imgui
+[submodule "vendor/sol2"]
+	path = vendor/sol2
+	url = https://github.com/ThePhD/sol2
+[submodule "vendor/luajit"]
+	path = vendor/luajit
+	url = https://github.com/WohlSoft/LuaJIT

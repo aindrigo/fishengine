@@ -3,13 +3,15 @@
 #include "fish/engine.hpp"
 #include "fish/version.hpp"
 #include <memory>
+#include <set>
 #include <string>
+
 namespace fish
 {
     class Runtime
     {
     public:
-        Runtime();
+        Runtime(std::set<std::string> arguments);
 
         void run();
     private:

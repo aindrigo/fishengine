@@ -18,6 +18,7 @@ set(ASSIMP_INSTALL OFF CACHE BOOL "disable assimp install")
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "disable assimp tests")
 set(ASSIMP_NO_EXPORT OFF CACHE BOOL "disable assimp export")
 
+
 add_vendor(glfw)
 add_vendor(glad)
 add_vendor(entt)
@@ -28,6 +29,8 @@ add_vendor(json)
 add_vendor(assimp)
 add_vendor(stb)
 add_vendor(imgui)
+add_vendor(sol2)
+add_vendor(luajit)
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/common)
 add_subdirectory(${PROJECT_SOURCE_DIR}/engine)

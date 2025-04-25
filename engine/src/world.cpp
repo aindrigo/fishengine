@@ -110,6 +110,21 @@ namespace fish
         return ent;
     }
 
+    void World::destroy(entt::entity entity)
+    {
+        FISH_ASSERT(isValid(entity), "Cannot destroy an invalid entity");
+        auto& node = this->registry.get<Node>(entity);
+        {
+            auto& next = node.firstChild;
+            while (isValid(next)) {
+                clearEntityParent(next);
+            }
+        }
+
+        clearEntityParent(entity);
+        registry.destroy(entity);
+    }
+
     Transform3D World::worldSpace3DTransform(entt::entity entity)
     {
         FISH_ASSERT(isValid(entity), "Cannot build transform for an invalid entity");

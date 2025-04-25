@@ -4,6 +4,8 @@ set(FISH_RUNTIME_DEPS
     fish::engine
     fish::common
     nlohmann_json
+    libluajit
+    sol2
 )
 add_executable(fish_runtime ${FISH_RUNTIME_SOURCES})
 add_executable(fish::runtime ALIAS fish_runtime)

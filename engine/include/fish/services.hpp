@@ -13,9 +13,15 @@ namespace fish
         Services() = default;
 
         template <typename T>
+        bool exists()
+        {
+            return this->services.contains(typeid(T));
+        }
+
+        template <typename T>
         T& addServiceData(const T& data)
         {
-            FISH_ASSERTF(!this->services.contains(typeid(T)), "Service {} exists already", typeid(T).name());
+            FISH_ASSERTF(!this->exists<T>(), "Service {} already exists", typeid(T).name());
             
             this->services[typeid(T)] = std::make_shared<ServiceContainer<T>>(data);
             return dynamic_cast<ServiceContainer<T>*>(this->services.at(typeid(T)).get())->data;
@@ -24,7 +30,7 @@ namespace fish
         template <typename T, typename ...Args>
         T& addService(const Args... args)
         {
-            FISH_ASSERTF(!this->services.contains(typeid(T)), "Service {} exists already", typeid(T).name());
+            FISH_ASSERTF(!this->exists<T>(), "Service {} already exists", typeid(T).name());
             
             this->services[typeid(T)] = std::make_shared<ServiceContainer<T>>(args...);
             return dynamic_cast<ServiceContainer<T>*>(this->services.at(typeid(T)).get())->data;
@@ -33,7 +39,7 @@ namespace fish
         template <typename T>
         T& getService()
         {
-            FISH_ASSERTF(this->services.contains(typeid(T)), "Service {} does not exist", typeid(T).name());
+            FISH_ASSERTF(this->exists<T>(), "Service {} does not exist", typeid(T).name());
             
             ServiceContainer<T>* servicePtr = dynamic_cast<ServiceContainer<T>*>(this->services.at(typeid(T)).get());
             return servicePtr->data;

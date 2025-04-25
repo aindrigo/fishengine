@@ -66,28 +66,31 @@ namespace fish
         // services
         auto& world = this->services.addService<World>();
         this->services.addService<Assets>(std::filesystem::current_path() / "assets");
-        this->services.addService<EngineInfo>();
-        this->services.addServiceData<TextureManager>(TextureManager(services));
+        auto& engineInfo = this->services.addServiceData<EngineInfo>(EngineInfo { .runType = initData.runType });
         auto& sceneLoader = this->services.addServiceData(SceneLoader(services));
-        this->services.addServiceData(UI(services));
-        this->services.addServiceData(ShaderManager(services));
 
-        // init libraries
-        glfwSetErrorCallback(glfwErrorCallback);
-        FISH_ASSERT(glfwInit(), "GLFW failed to initialize");
+        if (engineInfo.runType == EngineRunType::NORMAL) {
+            this->services.addServiceData<TextureManager>(TextureManager(services));
+            this->services.addServiceData(UI(services));
+            this->services.addServiceData(ShaderManager(services));
+
+            // init rendering-related things
+            glfwSetErrorCallback(glfwErrorCallback);
+            FISH_ASSERT(glfwInit(), "GLFW failed to initialize");
+
+            this->initWindow();
+            glEnable(GL_DEPTH_TEST);
+            glfwSwapInterval(1);
+            glfwShowWindow(window);
+        }
         
+        // init libraries
 #ifdef FISH_STEAM
         this->initSteam();
 #endif
-        // init engine-related things
-        this->initWindow();
-        sceneLoader.init();
         
         // start loop
-        glEnable(GL_DEPTH_TEST);
-        glfwSwapInterval(1);
-        glfwShowWindow(window);
-
+        sceneLoader.init();
         doLoop();
     }
 
@@ -96,16 +99,21 @@ namespace fish
         FISH_ASSERTF(this->state != EngineState::NOT_RUNNING, "{} is not running", initData.name);
         this->state = EngineState::NOT_RUNNING;
         
-        auto& world = this->services.getService<World>();
-        auto& shaderCache = this->services.getService<ShaderManager>();
+        auto& engineInfo = this->services.getService<EngineInfo>();
 
         // destroy objects
-        shaderCache.shutdown();
+        auto& world = this->services.getService<World>();
         world.shutdown();
-        glfwDestroyWindow(window);
 
+        // destroy rendering-related stuff
+        if (engineInfo.runType == EngineRunType::NORMAL) {
+            auto& shaderCache = this->services.getService<ShaderManager>();
+            shaderCache.shutdown();
+            glfwDestroyWindow(window);
+            glfwTerminate();
+        }
+        
         // terminate libraries
-        glfwTerminate();
         SteamAPI_Shutdown();
     }
     
@@ -118,7 +126,7 @@ namespace fish
     void Engine::initSteam()
     {
         if (SteamAPI_RestartAppIfNecessary(initData.steamAppId))
-            exit(EXIT_SUCCESS);
+            exit(EXIT_SUCCESS); // i'd end it all for you, Gabe...
         SteamAPI_Init();
     }
 #endif
@@ -156,44 +164,57 @@ namespace fish
 #endif
     }
 
+    bool Engine::shouldLoopContinue()
+    {
+        auto& engineInfo = this->services.getService<EngineInfo>();
+        if (engineInfo.runType == EngineRunType::NORMAL)
+            return !glfwWindowShouldClose(window);
+
+        return true;
+    }
+
     void Engine::doLoop()
     {
         auto& world = this->services.getService<World>();
         auto& events = this->services.getService<EventDispatcher>();
-        auto& userInput = this->services.getService<UserInput>();
         auto& engineInfo = this->services.getService<EngineInfo>();
-        auto& ui = this->services.getService<UI>();
-        auto& textureManager = this->services.getService<TextureManager>();
-        auto& screen = this->services.addService<Screen>(window);
-        world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
-        world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
-        world.addSystem<ImGuiSystem, Services&>(this->services, window);
         float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
-        ui.init();
-        screen.init();
+        if (engineInfo.runType == EngineRunType::NORMAL) {
+            auto& screen = this->services.addService<Screen>(window);
+            auto& userInput = this->services.getService<UserInput>();
+            auto& ui = this->services.getService<UI>();
+            auto& textureManager = this->services.getService<TextureManager>();
+            world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
+            world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
+            world.addSystem<ImGuiSystem, Services&>(this->services, window);
+            ui.init();
+            screen.init();
+        }
         events.dispatch("start");
-        while (!glfwWindowShouldClose(window))
+        while (shouldLoopContinue())
         {
             std::chrono::high_resolution_clock::time_point begin = std::chrono::high_resolution_clock::now();
             engineInfo.gameTime += engineInfo.deltaTime;
-            std::cout << "FPS: " << 1.0f / engineInfo.deltaTime << std::endl;
-            // tick
             if (nextTick < engineInfo.gameTime) {
                 nextTick += tickDelay;
-                textureManager.gc();
                 world.tick();
             }
-            screen.clearScreen();
 
+            // update
             events.dispatch("update");
             world.update();
-    
-            // frame logic            
-            world.render();
-            glfwSwapBuffers(window);
-            glfwPollEvents();
+
+            // frame logic
+            if (engineInfo.runType == EngineRunType::NORMAL) {
+                auto& screen = services.getService<Screen>();
+                screen.clearScreen();
+                world.render();
+
+                glfwSwapBuffers(window);
+                glfwPollEvents();
+            }
 
             // frame end
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();

@@ -55,6 +55,7 @@ namespace fish
 
     void Renderer3D::tick()
     {
+        textureManager.gc();
         auto& registry = world.getRegistry();
 
         // update lights

@@ -14,17 +14,50 @@ namespace fish
         this->observers[name].emplace_back(observer);
     }
 
+    void EventDispatcher::observeImmutable(const std::string& name, const std::function<ImmutableEventObserver>& observer)
+    {
+        if (!this->immutableObservers.contains(name))
+            this->immutableObservers[name] = {};
+
+        this->immutableObservers[name].push_back(observer);
+    }
+
+    void EventDispatcher::observeAll(const std::function<MultiEventObserver>& observer)
+    {
+        this->multiObservers.emplace_back(observer);
+    }
+
     EventData EventDispatcher::dispatch(const std::string& name, const EventData& data)
     {
-        if (!this->observers.contains(name))
-            return data;
         EventData result = data;
-        for (auto const& observer : this->observers[name]) {
+        if (this->observers.contains(name)) {
+            for (auto const& observer : this->observers[name]) {
+                CPPTRACE_TRY {
+                    result = observer(result);
+                } CPPTRACE_CATCH (std::exception& e) {
+                    std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
+                    cpptrace::from_current_exception().print();
+                }
+            }
+        }
+
+        for (auto const& observer : this->multiObservers) {
             CPPTRACE_TRY {
-                result = observer(result);
+                result = observer(name, result);
             } CPPTRACE_CATCH (std::exception& e) {
                 std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
                 cpptrace::from_current_exception().print();
+            }
+        }
+
+        if (this->immutableObservers.contains(name)) {
+            for (auto const& observer : this->immutableObservers[name]) {
+                CPPTRACE_TRY {
+                    observer(result);
+                } CPPTRACE_CATCH (std::exception& e) {
+                    std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
+                    cpptrace::from_current_exception().print();
+                }
             }
         }
 

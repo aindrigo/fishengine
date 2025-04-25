@@ -23,11 +23,37 @@ namespace fish
         return std::filesystem::exists(fsPath);
     }
 
+    bool Assets::isDirectory(const std::filesystem::path& dirPath)
+    {
+        std::filesystem::path fsPath = this->assetDirectory / dirPath;
+        return std::filesystem::is_directory(fsPath);
+    }
+
+    bool Assets::isFile(const std::filesystem::path& filePath)
+    {
+        std::filesystem::path fsPath = this->assetDirectory / filePath;
+        return std::filesystem::is_regular_file(fsPath) || std::filesystem::is_symlink(fsPath);
+    }
+
+    std::vector<std::filesystem::path> Assets::listDirectory(const std::filesystem::path& dirPath)
+    {
+        FISH_ASSERT(isDirectory(dirPath), "listDirectory(dirPath): dirPath must be a folder");
+
+        std::filesystem::path fsPath = this->assetDirectory / dirPath;
+        auto iterator = std::filesystem::directory_iterator(fsPath);
+        std::vector<std::filesystem::path> files;
+
+        for (auto const& entry : iterator)
+            files.push_back(std::filesystem::relative(entry, this->assetDirectory));
+
+        return files;
+    }
+
     std::string Assets::findAssetString(const std::filesystem::path& assetPath)
     {
+        FISH_ASSERTF(isFile(assetPath), "Asset {} does not exist or is not a file", assetPath.string());
         std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
-        FISH_ASSERTF(std::filesystem::is_regular_file(fsPath), "Asset {} does not exist or is not a file", assetPath.string());
         std::ifstream stream(fsPath, std::ios_base::in);   
         std::stringstream strstream;
         strstream << stream.rdbuf();
@@ -38,9 +64,9 @@ namespace fish
 
     std::vector<unsigned char> Assets::findAssetBytes(const std::filesystem::path& assetPath)
     {
+        FISH_ASSERTF(isFile(assetPath), "Asset {} does not exist or is not a file", assetPath.string());
         std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
-        FISH_ASSERTF(std::filesystem::is_regular_file(fsPath), "Asset {} does not exist or is not a file", assetPath.string());
         std::ifstream stream(fsPath, std::ios_base::binary | std::ios_base::in | std::ios_base::ate);
         stream.unsetf(std::ios_base::skipws);
         
