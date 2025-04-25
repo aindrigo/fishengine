@@ -45,16 +45,17 @@ namespace fish
                 if (!result.success) {
                     std::cout << "Command did not run successfully: " << result.message << std::endl;
                 }
-                
+
                 this->queuedCommand.reset();
-                
             }
         }
     }
     
     void Console::shutdown()
     {
+        this->running = false;
     }
+    
     bool Console::exists(const std::string& name)
     {
         return this->commands.contains(name);

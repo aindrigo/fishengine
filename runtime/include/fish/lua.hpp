@@ -27,6 +27,8 @@ namespace fish
         void initWorld();
         void initEngineInfo();
         void initEvents();
+        void initConsole();
+        void initImGui();
 
         Services& services;
         Assets& assets;

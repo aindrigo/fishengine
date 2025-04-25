@@ -21,8 +21,6 @@ namespace fish
 #endif
     };
 
-    
-
     class Engine
     {
     public:
@@ -40,7 +38,7 @@ namespace fish
 
         bool shouldLoopContinue();
         void doLoop();
-        enum struct EngineState { RUNNING, NOT_RUNNING };
+        enum struct EngineState { RUNNING, NOT_RUNNING, STOPPING };
 
         EngineState state = EngineState::NOT_RUNNING;
         Services services;

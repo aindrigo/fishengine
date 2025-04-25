@@ -18,4 +18,4 @@ add_library(imgui STATIC ${IMGUI_SOURCES})
 add_dependencies(imgui ${IMGUI_DEPS})
 
 target_link_libraries(imgui PUBLIC ${IMGUI_DEPS})
-target_include_directories(imgui PUBLIC ${IMGUI_DIR})
+target_include_directories(imgui PUBLIC ${IMGUI_DIR} ${IMGUI_DIR}/misc/cpp)

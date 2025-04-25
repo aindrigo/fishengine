@@ -4,9 +4,9 @@
 #include <optional>
 namespace fish
 {
-    enum struct EngineRunType {
-        NORMAL,
-        HEADLESS
+    enum struct EngineRunType : unsigned char {
+        NORMAL = 0,
+        HEADLESS = 1
     };
 
     struct EngineInfo {

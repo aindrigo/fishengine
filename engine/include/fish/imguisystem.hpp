@@ -13,7 +13,8 @@ namespace fish
         ImGuiSystem(Services& services, GLFWwindow* window);
 
         void init() override;
-        void render() override;
+        void preRender() override;
+        void postRender() override;
         void shutdown() override;
     private:
         GLFWwindow* window;

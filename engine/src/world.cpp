@@ -31,6 +31,16 @@ namespace fish
             }
     }
 
+    void World::preRender()
+    {
+        for (const auto& system : this->systems)
+            try {
+                system->preRender();
+            } catch (std::runtime_error& exception) {
+                std::cout << "Error processing system " << system << " prerender: " << exception.what() << std::endl;
+            }
+    }
+
     void World::render()
     {
         for (const auto& system : this->systems)
@@ -40,7 +50,17 @@ namespace fish
                 std::cout << "Error processing system " << system << " render: " << exception.what() << std::endl;
             }
     }
-
+    
+    void World::postRender()
+    {
+        for (const auto& system : this->systems)
+            try {
+                system->postRender();
+            } catch (std::runtime_error& exception) {
+                std::cout << "Error processing system " << system << " postrender: " << exception.what() << std::endl;
+            }
+    }
+    
     void World::tick()
     {
         for (const auto& system : this->systems)

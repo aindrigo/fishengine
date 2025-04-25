@@ -15,19 +15,25 @@ namespace fish
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-
         ImGui::StyleColorsDark();
 
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 430 core");
+
+        auto& io = ImGui::GetIO();
+        io.IniFilename = 0;
+        io.LogFilename = 0;
     }
 
-    void ImGuiSystem::render()
+    void ImGuiSystem::preRender()
     {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
-        
+    }
+
+    void ImGuiSystem::postRender()
+    {
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }

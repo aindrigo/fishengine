@@ -93,9 +93,8 @@ namespace fish
 #endif
         
         // base console commands
-        console.registerCommand("quit", [this](auto& args) {
-            this->stop();
-            exit(EXIT_SUCCESS);
+        console.registerCommand("quit", [&](auto& args) {
+            this->state = EngineState::STOPPING;
         });
 
         // start loop
@@ -226,13 +225,19 @@ namespace fish
             if (engineInfo.runType == EngineRunType::NORMAL) {
                 auto& screen = services.getService<Screen>();
                 screen.clearScreen();
+                
+                world.preRender();
                 world.render();
+                events.dispatch("render");
+                world.postRender();
 
                 glfwSwapBuffers(window);
                 glfwPollEvents();
             }
 
             // frame end
+            if (this->state == EngineState::STOPPING)
+                break;
             std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
             engineInfo.deltaTime = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000000.0f;
         }

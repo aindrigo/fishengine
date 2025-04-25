@@ -1,5 +1,6 @@
 #include "fish/lua.hpp"
 #include "fish/assets.hpp"
+#include "fish/console.hpp"
 #include "fish/engineinfo.hpp"
 #include "fish/events.hpp"
 #include "fish/lua/luaworld.hpp"
@@ -8,6 +9,7 @@
 #include "fish/world.hpp"
 #include <filesystem>
 #include <format>
+#include <set>
 #include <sol/forward.hpp>
 #include <sol/sol.hpp>
 #include <sol/string_view.hpp>
@@ -33,6 +35,8 @@ namespace fish
         this->initWorld();
         this->initEngineInfo();
         this->initEvents();
+        this->initConsole();
+        this->initImGui();
 
         auto files = assets.listDirectory("lua/main");
         
@@ -83,9 +87,13 @@ namespace fish
 
     void LuaService::initEngineInfo()
     {
-        auto engineInfo = luaState["EngineInfo"].get_or_create<sol::table>();
-        engineInfo["deltaTime"] = 0.0f;
-        engineInfo["gameTime"] = 0.0f;
+        auto& engineInfo = this->services.getService<EngineInfo>();
+
+        auto engineInfoLua = luaState["EngineInfo"].get_or_create<sol::table>();
+        engineInfoLua["deltaTime"] = 0.0f;
+        engineInfoLua["gameTime"] = 0.0f;
+        engineInfoLua["tickRate"] = engineInfo.tickRate;
+        engineInfoLua["runType"] = static_cast<unsigned char>(engineInfo.runType);
     }
 
     void LuaService::initEvents()
@@ -113,6 +121,19 @@ namespace fish
 
             return data;
         });
+    }
+
+    void LuaService::initConsole()
+    {
+        auto& console = this->services.getService<Console>();
+        auto luaConsole = luaState["Console"].get_or_create<sol::table>();
+        
+        
+        luaConsole["runCommand"] = [&](sol::string_view name) {
+            std::set<std::string> args;
+            console.runCommand(std::string(name), args);
+        };
+
     }
 
 }
