@@ -16,7 +16,9 @@ int main(int argc, char** argv)
         fish::Runtime runtime(arguments);
         runtime.run();
     } CPPTRACE_CATCH(std::exception& e) {
+#ifndef NDEBUG
         cpptrace::from_current_exception().print();
+#endif
         fish::helpers::fatalError(std::format("Error caught: {}", e.what()));
     }
 }

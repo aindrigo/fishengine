@@ -1,4 +1,5 @@
 #include <cpptrace/basic.hpp>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <iostream>
@@ -8,6 +9,7 @@
 #include "GLFW/glfw3.h"
 #include "fish/assets.hpp"
 #include "fish/common.hpp"
+#include "fish/console.hpp"
 #include "fish/events.hpp"
 #include "fish/helpers.hpp"
 #include "fish/imguisystem.hpp"
@@ -68,6 +70,7 @@ namespace fish
         this->services.addService<Assets>(std::filesystem::current_path() / "assets");
         auto& engineInfo = this->services.addServiceData<EngineInfo>(EngineInfo { .runType = initData.runType });
         auto& sceneLoader = this->services.addServiceData(SceneLoader(services));
+        auto& console = this->services.addServiceData(Console(services));
 
         if (engineInfo.runType == EngineRunType::NORMAL) {
             this->services.addServiceData<TextureManager>(TextureManager(services));
@@ -89,8 +92,15 @@ namespace fish
         this->initSteam();
 #endif
         
+        // base console commands
+        console.registerCommand("quit", [this](auto& args) {
+            this->stop();
+            exit(EXIT_SUCCESS);
+        });
+
         // start loop
         sceneLoader.init();
+        console.init();
         doLoop();
     }
 
@@ -100,10 +110,12 @@ namespace fish
         this->state = EngineState::NOT_RUNNING;
         
         auto& engineInfo = this->services.getService<EngineInfo>();
-
-        // destroy objects
+        // shutdown services
         auto& world = this->services.getService<World>();
         world.shutdown();
+
+        auto& console = this->services.getService<Console>();
+        console.shutdown();
 
         // destroy rendering-related stuff
         if (engineInfo.runType == EngineRunType::NORMAL) {
@@ -178,6 +190,7 @@ namespace fish
         auto& world = this->services.getService<World>();
         auto& events = this->services.getService<EventDispatcher>();
         auto& engineInfo = this->services.getService<EngineInfo>();
+        auto& console = this->services.getService<Console>();
         float tickDelay = 1.0f / engineInfo.tickRate;
         float nextTick = 0.0f;
 
@@ -186,12 +199,13 @@ namespace fish
             auto& userInput = this->services.getService<UserInput>();
             auto& ui = this->services.getService<UI>();
             auto& textureManager = this->services.getService<TextureManager>();
-            world.addSystem<Renderer3D, Services&, GLFWwindow*>(this->services, window);
-            world.addSystem<Renderer2D, Services&, GLFWwindow*>(this->services, window);
+            world.addSystem<Renderer3D, Services&>(this->services, window);
+            world.addSystem<Renderer2D, Services&>(this->services, window);
             world.addSystem<ImGuiSystem, Services&>(this->services, window);
             ui.init();
             screen.init();
         }
+
         events.dispatch("start");
         while (shouldLoopContinue())
         {
@@ -199,12 +213,14 @@ namespace fish
             engineInfo.gameTime += engineInfo.deltaTime;
             if (nextTick < engineInfo.gameTime) {
                 nextTick += tickDelay;
+                events.dispatch("tick");
                 world.tick();
             }
 
             // update
             events.dispatch("update");
             world.update();
+            console.update();
 
             // frame logic
             if (engineInfo.runType == EngineRunType::NORMAL) {

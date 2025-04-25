@@ -36,7 +36,9 @@ namespace fish
                     result = observer(result);
                 } CPPTRACE_CATCH (std::exception& e) {
                     std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
+#ifndef NDEBUG
                     cpptrace::from_current_exception().print();
+#endif
                 }
             }
         }
@@ -46,7 +48,9 @@ namespace fish
                 result = observer(name, result);
             } CPPTRACE_CATCH (std::exception& e) {
                 std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
+#ifndef NDEBUG
                 cpptrace::from_current_exception().print();
+#endif
             }
         }
 
@@ -56,7 +60,9 @@ namespace fish
                     observer(result);
                 } CPPTRACE_CATCH (std::exception& e) {
                     std::cout << std::format("Caught an exception dispatching event {}, continuing anyway: {}", name, e.what()) << std::endl;
+#ifndef NDEBUG
                     cpptrace::from_current_exception().print();
+#endif
                 }
             }
         }
