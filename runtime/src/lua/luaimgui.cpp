@@ -1,6 +1,7 @@
 #include "fish/lua.hpp"
 #include "imgui.h"
 #include "imgui_stdlib.h"
+#include <sol/forward.hpp>
 #include <sol/optional_implementation.hpp>
 #include <sol/string_view.hpp>
 #include <sol/table.hpp>
@@ -19,19 +20,35 @@ namespace fish
             ImGui::Text("%s", text.c_str());
         };
 
-        imguiLua["textInput"] = [](std::string currentText, sol::optional<std::string> placeholder) {
+        imguiLua["inputText"] = [&](std::string currentText, sol::optional<std::string> placeholder) {
             std::string* ptr = new std::string(currentText);
-
-            ImGui::InputText(placeholder.value_or("").c_str(), ptr);
-
-            std::string result = *ptr;
-            delete ptr;
             
-            return result;
+            ImGui::InputText(placeholder.value_or("##").c_str(), ptr);
+            std::string result = *ptr;
+            
+            auto table = luaState.create_table(2);
+            table.add(result);
+            table.add(ImGui::IsItemDeactivatedAfterEdit());
+
+            delete ptr;
+
+            return table;
         };
 
         imguiLua["button"] = [](std::string text) {
             return ImGui::Button(text.c_str());
+        };
+
+        imguiLua["sameLine"] = []() {
+            ImGui::SameLine();
+        };
+
+        imguiLua["beginChild"] = [](std::string id) {
+            return ImGui::BeginChild(id.c_str());
+        };
+
+        imguiLua["endChild"] = []() {
+            ImGui::EndChild();
         };
 
         imguiLua["endWindow"] = [](std::string name) {

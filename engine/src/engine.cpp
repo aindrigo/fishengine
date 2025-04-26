@@ -108,6 +108,9 @@ namespace fish
         FISH_ASSERTF(this->state != EngineState::NOT_RUNNING, "{} is not running", initData.name);
         this->state = EngineState::NOT_RUNNING;
         
+        auto& events = this->services.getService<EventDispatcher>();
+        events.dispatch("shutdown");
+        
         auto& engineInfo = this->services.getService<EngineInfo>();
         // shutdown services
         auto& world = this->services.getService<World>();

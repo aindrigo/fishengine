@@ -68,10 +68,14 @@ namespace fish
         auto& services = this->engine->getServices();
         auto& events = services.getService<EventDispatcher>();
         
-        events.observe("start", [&](auto& eventData) {
+        events.observeImmutable("start", [&](const auto& _) {
             auto& lua = services.addServiceData<LuaService>(LuaService(services));
             lua.init();
-            return eventData;
+        });
+
+        events.observeImmutable("shutdown", [&](const auto& _) {
+            auto& lua = services.getService<LuaService>();
+            lua.shutdown();
         });
 
         this->engine->start();

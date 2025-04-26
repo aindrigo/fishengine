@@ -8,6 +8,7 @@
 #include <string>
 #include <thread>
 #include <unordered_map>
+#include <vector>
 namespace fish
 {
     typedef void ConsoleCommand(const std::set<std::string>& args);
@@ -29,7 +30,9 @@ namespace fish
 
         bool exists(const std::string& name);
         void registerCommand(const std::string& name, const std::function<ConsoleCommand>& command);
-        ConsoleCommandResult runCommand(const std::string& name, const std::set<std::string>& args);
+        ConsoleCommandResult runCommand(const std::string& name, const std::set<std::string>& args, bool log = true);
+        void log(const std::string& message);
+        const std::vector<std::string>& getLogs();
     private:
         struct QueuedCommand {
             std::string commandName;
@@ -41,8 +44,9 @@ namespace fish
         std::atomic_bool running;
         std::mutex queuedCommandMutex;
         std::optional<QueuedCommand> queuedCommand;
-        Services& services;
         std::thread readThread;
         std::unordered_map<std::string, std::function<ConsoleCommand>> commands;
+        std::vector<std::string> logs;
+        Services& services;
     };
 }

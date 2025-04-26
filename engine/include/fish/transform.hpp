@@ -36,15 +36,15 @@ namespace fish
                 (rotation * glm::vec3(1.0f, 0.0f, 0.0f)).z
             );
         }
+
         glm::mat4 build() 
         {
+            auto pivotFrom = glm::translate(glm::mat4(1.0), pivotPoint + position);
+            auto pivotTo = glm::translate(glm::mat4(1.0), -(pivotPoint + position));
 
-            glm::mat4 pivotFrom = glm::translate(glm::mat4(1.0), pivotPoint + position);
-            glm::mat4 pivotTo = glm::translate(glm::mat4(1.0), -(pivotPoint + position));
-
-            glm::mat4 scalingMatrix = glm::scale(glm::mat4(1.0), scale);
-            glm::mat4 rotationMatrix = glm::mat4_cast(rotation);
-            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0), position);
+            auto scalingMatrix = glm::scale(glm::mat4(1.0), scale);
+            auto rotationMatrix = glm::mat4_cast(rotation);
+            auto translationMatrix = glm::translate(glm::mat4(1.0), position);
             
             return pivotFrom * rotationMatrix * scalingMatrix * pivotTo * translationMatrix;
         }

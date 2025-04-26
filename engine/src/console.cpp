@@ -1,10 +1,12 @@
 #include "fish/console.hpp"
 #include "fish/common.hpp"
 #include "fish/engineinfo.hpp"
+#include "fish/events.hpp"
 #include "fish/helpers.hpp"
 #include "fish/services.hpp"
 #include <cpptrace/from_current.hpp>
 #include <exception>
+#include <format>
 #include <functional>
 #include <iostream>
 #include <mutex>
@@ -41,11 +43,7 @@ namespace fish
             if (engineInfo.runType == EngineRunType::HEADLESS && this->queuedCommand.has_value()) {
                 auto command = this->queuedCommand.value();
 
-                auto result = this->runCommand(command.commandName, command.arguments);
-                if (!result.success) {
-                    std::cout << "Command did not run successfully: " << result.message << std::endl;
-                }
-
+                this->runCommand(command.commandName, command.arguments);
                 this->queuedCommand.reset();
             }
         }
@@ -67,13 +65,14 @@ namespace fish
         this->commands[name] = command;
     }
 
-    ConsoleCommandResult Console::runCommand(const std::string& name, const std::set<std::string>& arguments)
+    ConsoleCommandResult Console::runCommand(const std::string& name, const std::set<std::string>& arguments, bool log)
     {
         ConsoleCommandResult result;
 
         if (!this->exists(name)) {
             result.success = false;
-            result.message = "Command does not exist";
+            result.message = std::format("Command {} does not exist", name);
+            this->log(result.message);
             return result;
         }
 
@@ -81,14 +80,35 @@ namespace fish
             this->commands[name](arguments);
         } CPPTRACE_CATCH(std::exception& e) {
             result.success = false;
-            result.message = "An error was caught processing the command";
+            result.message = std::format("An error was caught processing command {}: {}", name, e.what());
+            this->log(result.message);
 #ifndef NDEBUG
             cpptrace::from_current_exception().print();
 #endif
+            return result;
         }
 
         result.success = true;
         return result;
+    }
+
+    void Console::log(const std::string& message) 
+    {
+        auto& events = this->services.getService<EventDispatcher>();
+
+        if (this->logs.size() >= 256)
+            this->logs.erase(this->logs.begin());
+
+        this->logs.push_back(message);
+
+        EventData event;
+        event.setProperty("log", message);
+        events.dispatch("consoleLog", event);
+    }
+
+    const std::vector<std::string>& Console::getLogs()
+    {
+        return this->logs;
     }
 
     void Console::readThreadFunction()
