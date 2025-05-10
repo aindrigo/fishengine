@@ -9,15 +9,6 @@ on:
     branches: [ "master" ]
 
 jobs:
-  install_deps:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: xorg-dev libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
-          version: 1.0
-
   build:
     needs: install_deps
     runs-on: ${{ matrix.os }}
@@ -52,6 +43,13 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
+    
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      if: matrix.os == 'ubuntu-latest'
+      with:
+        packages: xorg-dev libwayland-dev libxkbcommon-dev wayland-protocols extra-cmake-modules
+        version: 1.0
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
