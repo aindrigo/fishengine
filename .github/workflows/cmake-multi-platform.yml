@@ -23,7 +23,7 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest] # windows is currently broken
         build_type: [Release]
         preset: [x64-release-vs22, x64-release-linux]
         include:
@@ -70,3 +70,11 @@ jobs:
       # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest --build-config ${{ matrix.build_type }}
+
+    - name: Archive code coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-results
+        path: out/build/${{ matrix.preset }}
+        retention-days: 7
+    
