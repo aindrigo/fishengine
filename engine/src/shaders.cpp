@@ -37,9 +37,9 @@ namespace fish
 
         GLuint shaderProgram = glCreateProgram();
 
-        GLuint vertexShader = NULL;
-        GLuint fragmentShader = NULL;
-        GLuint computeShader = NULL;
+        GLuint vertexShader = 0;
+        GLuint fragmentShader = 0;
+        GLuint computeShader = 0;
         if (assets.exists(vertPath)) {
             vertexShader = glCreateShader(GL_VERTEX_SHADER);
             auto result = processor.process(vertPath);
@@ -90,13 +90,13 @@ namespace fish
             .program = shaderProgram
         };
         
-        if (vertexShader != NULL)
+        if (vertexShader != 0)
             glDeleteShader(vertexShader);
 
-        if (fragmentShader != NULL)
+        if (fragmentShader != 0)
             glDeleteShader(fragmentShader);
         
-        if (computeShader != NULL)
+        if (computeShader != 0)
             glDeleteShader(computeShader);
     }
 
@@ -107,12 +107,12 @@ namespace fish
         glShaderSource(shader, 1, &shaderCode, nullptr);
         glCompileShader(shader);
 
-        ShaderCompilationResult result;
-        int success;
+        ShaderCompilationResult result {};
+        int success = 0;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 
         if (success == 0) {
-            int length;
+            int length = 0;
             glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 
             std::vector<char> infoLogList(length);

@@ -1,4 +1,14 @@
-local world = World.get()
+Console = {}
+
+Console._visible = false
+
+function Console.show()
+    Console._visible = true
+end
+
+function Console.hide()
+    Console._visible = false
+end
 
 local logs = {}
 Events.observe("consoleLog", function(data)
@@ -8,6 +18,10 @@ end)
 
 local consoleInput = ""
 Events.observe("render", function()
+    if not Console._visible then
+        return
+    end
+
     if ImGui.beginWindow("Console") then
         local input = ImGui.inputText(consoleInput)
         consoleInput = input[1]
