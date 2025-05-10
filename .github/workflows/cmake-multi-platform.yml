@@ -23,18 +23,17 @@ jobs:
       #
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
-        os: [ubuntu-latest] # windows is currently broken
-        build_type: [Release]
-        preset: [x64-release-vs22, x64-release-linux]
+        os: [ubuntu-latest, windows-latest]
+        preset: [x64-release-msys2, x64-release-linux]
         include:
           - os: windows-latest
-            preset: x64-release-vs22
+            preset: x64-release-msys2
           - os: ubuntu-latest
             preset: x64-release-linux
           - os: ubuntu-latest
         exclude:
           - os: ubuntu-latest
-            preset: x64-release-vs22
+            preset: x64-release-msys2
           - os: windows-latest
             preset: x64-release-linux
 

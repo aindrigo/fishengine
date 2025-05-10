@@ -74,6 +74,16 @@
             "inherits": [ "base-windows", "base-x64", "base-debug", "base-msys2" ]
         },
         {
+            "name": "x86-release-msys2",
+            "displayName": "Windows (x86, release, VS2022)",
+            "inherits": [ "base-windows", "base-x86", "base-release", "base-msys2" ]
+        },
+        {
+            "name": "x64-release-msys2",
+            "displayName": "Windows (x64, release, VS2022)",
+            "inherits": [ "base-windows", "base-x64", "base-release", "base-msys2" ]
+        },
+        {
             "name": "x86-release-vs22",
             "displayName": "Windows (x86, release, VS2022)",
             "inherits": [ "base-windows", "base-x86", "base-release", "base-vs22" ]
