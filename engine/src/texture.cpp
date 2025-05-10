@@ -61,7 +61,8 @@ namespace fish
 
     Texture2DData TextureManager::loadTextureFromFile(TextureFileData fileData)
     {
-        std::vector<unsigned char> data = assets.findAssetBytes(fileData.path);
+        auto asset = this->assets.findAsset(fileData.path);
+        std::vector<unsigned char>& data = asset->bytes();
         
         Texture2DData textureData {};
         

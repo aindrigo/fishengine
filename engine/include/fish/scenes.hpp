@@ -13,6 +13,7 @@
 #include "glm/fwd.hpp"
 #include <cstddef>
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -68,7 +69,7 @@ namespace fish
             class ASIOStream : public Assimp::IOStream
             {
             public:
-                ASIOStream(const std::vector<unsigned char>& data);
+                ASIOStream(std::shared_ptr<Asset> asset);
                 size_t Read(void* pvBuffer, size_t pSize, size_t pCount) override;
                 size_t Write(const void* pvBuffer, size_t pSize, size_t pCount) override;
                 aiReturn Seek(size_t pOffset, aiOrigin pOrigin) override;
@@ -77,7 +78,7 @@ namespace fish
                 void Flush() override;
             private:
                 size_t cursor = 0;
-                std::vector<unsigned char> data;
+                std::shared_ptr<Asset> asset;
             };
             Services& services;
             Assets& assets;

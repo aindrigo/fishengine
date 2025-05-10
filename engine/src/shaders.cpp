@@ -64,9 +64,10 @@ namespace fish
 
         if (assets.exists(computePath)) {
             computeShader = glCreateShader(GL_COMPUTE_SHADER);
-            std::string computeShaderStr = assets.findAssetString(computePath);
+            auto result = processor.process(computePath);
+            FISH_ASSERTF(result.success, "Shader {} did not preprocess successfully (compute): {}", name, result.data);
             
-            ShaderCompilationResult computeResult = this->compileShader(computeShader, computeShaderStr);
+            ShaderCompilationResult computeResult = this->compileShader(computeShader, result.data);
             FISH_ASSERTF(computeResult.success, "Shader {} did not compile successfully (compute): {}", name, computeResult.message);
 
             glAttachShader(shaderProgram, computeShader);

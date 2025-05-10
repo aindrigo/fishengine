@@ -22,13 +22,13 @@ namespace fish
 
     GLSLPreProcessor::ProcessResult GLSLPreProcessor::internalProcess(const std::filesystem::path& file, std::set<std::string>& includedFiles)
     {
-        std::string code = this->assets.findAssetString(file);
+        auto asset = this->assets.findAsset(file);
         std::filesystem::path dir = file.parent_path();
 
         ProcessResult result;
         result.success = true;
 
-        std::vector<std::string> lines = helpers::String::splitString(code, "\n");
+        std::vector<std::string> lines = helpers::String::splitString(asset->str(), "\n");
         std::vector<std::string> linesResult = std::vector<std::string>(lines);
 
         unsigned int lineIndex = 0;

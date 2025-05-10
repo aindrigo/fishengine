@@ -1,13 +1,13 @@
-Console = {}
+FishUtils = {}
 
-Console._visible = false
+FishUtils._visible = false
 
-function Console.show()
-    Console._visible = true
+function FishUtils.show()
+    FishUtils._visible = true
 end
 
-function Console.hide()
-    Console._visible = false
+function FishUtils.hide()
+    FishUtils._visible = false
 end
 
 local logs = {}
@@ -18,7 +18,7 @@ end)
 
 local consoleInput = ""
 Events.observe("render", function()
-    if not Console._visible then
+    if not FishUtils._visible then
         return
     end
 

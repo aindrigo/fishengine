@@ -5,6 +5,7 @@
 #include <ios>
 #include <iosfwd>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -49,22 +50,10 @@ namespace fish
         return files;
     }
 
-    std::string Assets::findAssetString(const std::filesystem::path& assetPath)
+    std::shared_ptr<Asset> Assets::findAsset(const std::filesystem::path& assetPath)
     {
         FISH_ASSERTF(isFile(assetPath), "Asset {} does not exist or is not a file", assetPath.string());
-        std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
-        std::ifstream stream(fsPath, std::ios_base::in);   
-        std::stringstream strstream;
-        strstream << stream.rdbuf();
-
-        stream.close();
-        return strstream.str();
-    }
-
-    std::vector<unsigned char> Assets::findAssetBytes(const std::filesystem::path& assetPath)
-    {
-        FISH_ASSERTF(isFile(assetPath), "Asset {} does not exist or is not a file", assetPath.string());
         std::filesystem::path fsPath = this->assetDirectory / assetPath;
 
         std::ifstream stream(fsPath, std::ios_base::binary | std::ios_base::in | std::ios_base::ate);
@@ -78,6 +67,6 @@ namespace fish
         stream.read(reinterpret_cast<char*>(data.data()), size);
         stream.close();
 
-        return data;
+        return std::make_shared<Asset>(data, assetPath);
     }
 }

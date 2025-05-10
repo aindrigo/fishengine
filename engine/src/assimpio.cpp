@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 #include <vector>
 
 namespace fish
@@ -27,7 +28,7 @@ namespace fish
 
     Assimp::IOStream* SceneLoader::ASIOHandler::Open(const char* file, const char* _)
     {
-        return new SceneLoader::ASIOHandler::ASIOStream(assets.findAssetBytes(file));
+        return new SceneLoader::ASIOHandler::ASIOStream(assets.findAsset(file));
     }
 
     void SceneLoader::ASIOHandler::Close(Assimp::IOStream* stream)
@@ -36,16 +37,17 @@ namespace fish
     }
 
     // IOStream
-    SceneLoader::ASIOHandler::ASIOStream::ASIOStream(const std::vector<unsigned char>& data)
-        : data(data)
+    SceneLoader::ASIOHandler::ASIOStream::ASIOStream(std::shared_ptr<Asset> asset)
+        : asset(asset)
     {
     }
 
     size_t SceneLoader::ASIOHandler::ASIOStream::Read(void* buffer, size_t size, size_t count)
     {
-        size_t bytes = std::min(size * count, this->data.size() - cursor);
+        auto& data = this->asset->bytes();
+        size_t bytes = std::min(size * count, data.size() - cursor);
 
-        std::memcpy(buffer, this->data.data() + cursor, bytes);
+        std::memcpy(buffer, data.data() + cursor, bytes);
 
         return bytes / size;
     }
@@ -58,6 +60,8 @@ namespace fish
 
     aiReturn SceneLoader::ASIOHandler::ASIOStream::Seek(size_t pOffset, aiOrigin pOrigin)
     {
+        auto& data = this->asset->bytes();
+
         switch (pOrigin) {
         case aiOrigin_SET:
             this->cursor = pOffset;
@@ -66,7 +70,7 @@ namespace fish
             this->cursor += pOffset;
             break;
         case aiOrigin_END:
-            this->cursor = this->data.size() - this->cursor;
+            this->cursor = data.size() - this->cursor;
             break;
         default:
             break;
@@ -81,7 +85,7 @@ namespace fish
 
     size_t SceneLoader::ASIOHandler::ASIOStream::FileSize() const
     {
-        return this->data.size() * sizeof(unsigned char);
+        return asset->size() * sizeof(unsigned char);
     }
 
     void SceneLoader::ASIOHandler::ASIOStream::Flush()

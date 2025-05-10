@@ -70,9 +70,9 @@ namespace fish
         if (!assets.isFile(file))
             helpers::fatalError(std::format("Tried to run invalid lua file {}", file.string()));
 
-        std::string code = assets.findAssetString(file);
+        auto asset = assets.findAsset(file);
 
-        auto result = this->luaState.safe_script(code, file.string());
+        auto result = this->luaState.safe_script(asset->str(), file.string());
         FISH_ASSERTF(result.valid(), "Main script did not execute correctly!: {}", static_cast<sol::error>(result).what());
     }
 
