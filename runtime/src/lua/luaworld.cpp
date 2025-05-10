@@ -49,4 +49,14 @@ namespace fish::lua
         entt::entity parentEntity = parent ? parent.value().getEntity() : entt::null;
         return { this->world.create(parentEntity), world };
     }
+    
+    void LuaWorld::setCamera(LuaEntityWrapper entity)
+    {
+        this->world.setCamera(entity.getEntity());
+    }
+
+    LuaEntityWrapper LuaWorld::getCamera()
+    {
+        return { this->world.getCamera(), world };
+    }
 }

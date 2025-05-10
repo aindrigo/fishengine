@@ -109,7 +109,11 @@ namespace fish
 
         worldLua.new_usertype<lua::LuaWorld>("World",
             "create",
-            &lua::LuaWorld::create
+            &lua::LuaWorld::create,
+            "getCamera",
+            &lua::LuaWorld::getCamera,
+            "setCamera",
+            &lua::LuaWorld::setCamera
         );
     }
 

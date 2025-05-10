@@ -1,4 +1,5 @@
 #include "fish/world.hpp"
+#include "entt/entity/entity.hpp"
 #include "entt/entity/fwd.hpp"
 #include "entt/entt.hpp"
 #include "fish/material.hpp"
@@ -13,6 +14,7 @@
 namespace fish
 {
     World::World()
+        : camera(entt::null)
     {
         this->registry.on_destroy<entt::entity>().connect<&World::onEntityDestroy>(this);
         this->root = registry.create();
@@ -79,6 +81,16 @@ namespace fish
             } catch (std::runtime_error& exception) {
                 std::cout << "Error processing system " << system << " shutdown: " << exception.what() << std::endl;
             }
+    }
+
+    entt::entity World::getCamera()
+    {
+        return this->camera;
+    }
+
+    void World::setCamera(entt::entity entity)
+    {
+        this->camera = entity;
     }
 
     bool World::isValid(entt::entity entity)

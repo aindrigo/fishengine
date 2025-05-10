@@ -1,4 +1,5 @@
 #include "GLFW/glfw3.h"
+#include "entt/entity/entity.hpp"
 #include "entt/entity/fwd.hpp"
 #include "fish/camera.hpp"
 #include "fish/common.hpp"
@@ -195,12 +196,11 @@ namespace fish
     {
         glDepthFunc(GL_GREATER); // reversed-z stuff
 
-        auto& engineInfo = this->services.getService<EngineInfo>();
-        if (!engineInfo.camera.has_value())
+        auto cameraEntity = world.getCamera();
+        if (cameraEntity == entt::null)
             return;
-
+        
         auto& registry = world.getRegistry();
-        auto& cameraEntity = engineInfo.camera.value();
 
         bool componentsFound = registry.all_of<Camera3D, Transform3D>(cameraEntity);
         FISH_ASSERT(componentsFound, "Camera3D & Transform3D not found on camera entity");
@@ -227,7 +227,6 @@ namespace fish
         };
 
         
-
         for (auto const& ent : group) {
             RenderPassData::RenderEntity entity = {
                 .entity = ent,

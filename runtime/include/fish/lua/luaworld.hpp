@@ -24,6 +24,9 @@ namespace fish::lua
     public:
         LuaWorld(World& world);
         LuaEntityWrapper create(sol::optional<LuaEntityWrapper>);
+
+        void setCamera(LuaEntityWrapper entity);
+        LuaEntityWrapper getCamera();
     private:
         World& world;
     };

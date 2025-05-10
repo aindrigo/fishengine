@@ -29,6 +29,9 @@ namespace fish
             return;
         }
     
+        entt::entity getCamera();
+        void setCamera(entt::entity entity);
+
         bool isValid(entt::entity entity);
         void setParent(entt::entity entity, entt::entity parent = entt::null);
 
@@ -45,7 +48,6 @@ namespace fish
         void postRender();
         void tick();
         void shutdown();
-    
     private:
         void clearEntityParent(entt::entity entity);
         void moveEntityParent(entt::entity entity, entt::entity parent);
@@ -54,6 +56,7 @@ namespace fish
 
         entt::entity root;
         std::vector<std::unique_ptr<ISystem>> systems;
+        entt::entity camera;
         entt::registry registry;
     };
 }
