@@ -24,6 +24,7 @@ jobs:
       # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
       matrix:
         os: [ubuntu-latest, windows-latest]
+        build_type: [RelWithDebInfo]
         preset: [x64-release-msys2, x64-release-linux]
         include:
           - os: windows-latest
