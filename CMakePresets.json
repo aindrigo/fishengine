@@ -92,6 +92,16 @@
             "name": "x64-debug-linux",
             "displayName": "Linux (x64, debug)",
             "inherits": [ "base-unix", "base-x64", "base-debug" ]
+        },
+        {
+            "name": "x86-release-linux",
+            "displayName": "Linux (x86, release)",
+            "inherits": [ "base-unix", "base-x86", "base-release" ]
+        },
+        {
+            "name": "x64-release-linux",
+            "displayName": "Linux (x64, release)",
+            "inherits": [ "base-unix", "base-x64", "base-release" ]
         }
     ]
 }
