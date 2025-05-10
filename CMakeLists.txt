@@ -11,8 +11,7 @@ function(add_vendor VENDOR_NAME)
     add_subdirectory(${VENDOR_DIR}/${VENDOR_NAME})
 endfunction()
 
-set(STEAM ON)
-option(STEAM "Should Steamworks be included & integrated?" ON)
+option(STEAM "Should Steamworks be included & integrated?" OFF)
 
 set(ASSIMP_INSTALL OFF CACHE BOOL "disable assimp install")
 set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "disable assimp tests")

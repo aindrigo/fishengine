@@ -6,8 +6,6 @@
 #include "fish/lua.hpp"
 #include "fish/services.hpp"
 #include "nlohmann/json.hpp" // IWYU pragma: keep
-#include "nlohmann/json_fwd.hpp"
-#include <cstdlib>
 #include <filesystem>
 #include <set>
 #include <string>

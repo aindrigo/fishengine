@@ -1,9 +1,7 @@
 #include <cpptrace/basic.hpp>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <iostream>
-#include <steam/steam_api_common.h>
 #include <string>
 #include "fish/engine.hpp"
 #include "GLFW/glfw3.h"
@@ -28,6 +26,7 @@
 #include "stb_image.h"
 
 #ifdef FISH_STEAM
+#include <steam/steam_api_common.h>
 #include "steam/steam_api.h"
 #endif
 
@@ -79,6 +78,9 @@ namespace fish
 
             // init rendering-related things
             glfwSetErrorCallback(glfwErrorCallback);
+#if defined(FISH_LINUX)
+            glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11); // Wayland does not seem to work on KDE Plasma
+#endif
             FISH_ASSERT(glfwInit(), "GLFW failed to initialize");
 
             this->initWindow();
@@ -128,7 +130,9 @@ namespace fish
         }
         
         // terminate libraries
+#ifdef FISH_STEAM
         SteamAPI_Shutdown();
+#endif
     }
     
     Services& Engine::getServices()
