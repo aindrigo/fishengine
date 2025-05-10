@@ -19,6 +19,7 @@ jobs:
           version: 1.0
 
   build:
+    needs: install_deps
     runs-on: ${{ matrix.os }}
 
     strategy:
