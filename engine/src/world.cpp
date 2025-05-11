@@ -98,6 +98,14 @@ namespace fish
         return this->registry.valid(entity) && this->registry.any_of<Node>(entity);
     }
 
+    entt::entity World::getParent(entt::entity entity)
+    {
+        FISH_ASSERT(isValid(entity), "Entity to get parent on must be valid");
+
+        auto& node = registry.get<Node>(entity);
+        return node.parent;
+    }
+    
     void World::setParent(entt::entity entity, entt::entity parent)
     {
         FISH_ASSERT(isValid(entity), "Entity to set parent on must be valid");

@@ -1,17 +1,18 @@
 #include "fish/lua.hpp"
+#include "entt/entity/fwd.hpp"
 #include "fish/assets.hpp"
+#include "fish/camera.hpp"
 #include "fish/common.hpp"
 #include "fish/console.hpp"
 #include "fish/engineinfo.hpp"
 #include "fish/events.hpp"
 #include "fish/lua/luaevents.hpp"
-#include "fish/lua/luascene.hpp"
-#include "fish/lua/luaworld.hpp"
-#include "fish/lua/luamath.hpp"
 #include "fish/scenes.hpp"
 #include "fish/services.hpp"
 #include "fish/helpers.hpp"
 #include "fish/world.hpp"
+#include "glm/ext/vector_float3.hpp"
+#include "glm/fwd.hpp"
 #include <filesystem>
 #include <format>
 #include <set>
@@ -29,11 +30,11 @@
 namespace fish
 {
     LuaService::LuaService(Services& services)
-        : services(services), assets(services.getService<Assets>()), luaWorld(services.getService<World>())
+        : services(services), assets(services.getService<Assets>())
     {}
 
     LuaService::LuaService(const LuaService& other)
-        : services(other.services), assets(other.assets), luaWorld(other.luaWorld), luaState()
+        : services(other.services), assets(other.assets), luaState()
     {}
 
     void LuaService::init()
@@ -53,6 +54,7 @@ namespace fish
         this->initSceneLoader();
         this->initMath();
         this->initImGui();
+        this->initComponents();
 
         auto files = assets.listDirectory("lua/main");
         
@@ -96,24 +98,28 @@ namespace fish
         auto& world = this->services.getService<World>();
         auto worldLua = this->luaState["World"].get_or_create<sol::table>();
 
-        worldLua["get"] = [&]() { return this->luaWorld; };
+        worldLua["get"] = [&]() -> World& { return world; };
 
-        worldLua.new_usertype<lua::LuaEntityWrapper>("Entity",
-            "isValid",
-            &lua::LuaEntityWrapper::isValid,
-            "destroy",
-            &lua::LuaEntityWrapper::destroy,
-            "getParent",
-            &lua::LuaEntityWrapper::getParent
-        );
+        worldLua.new_usertype<entt::entity>("Entity");
 
-        worldLua.new_usertype<lua::LuaWorld>("World",
+        worldLua.new_usertype<World>("World",
             "create",
-            &lua::LuaWorld::create,
+            [&](World& self, sol::optional<entt::entity> parent) {
+                if (parent.has_value())
+                    return self.create(parent.value());
+
+                return self.create();
+            },
             "getCamera",
-            &lua::LuaWorld::getCamera,
+            [&](World& self) { return self.getCamera(); },
             "setCamera",
-            &lua::LuaWorld::setCamera
+            [&](World& self, entt::entity entity) { self.setCamera(entity); },
+            "isValid",
+            [&](World& self, entt::entity entity) { return self.isValid(entity); },
+            "destroy",
+            [&](World& self, entt::entity entity) { return self.destroy(entity); },
+            "getParent",
+            [&](World& self, entt::entity entity) { return self.getParent(entity); }
         );
     }
 
@@ -167,65 +173,31 @@ namespace fish
         auto& assets = this->services.getService<Assets>();
 
         auto luaSceneLoader = luaState["SceneLoader"].get_or_create<sol::table>();
-
-        luaSceneLoader.new_usertype<lua::LuaSceneModel>("SceneModel",
-            "getVertices",
-            &lua::LuaSceneModel::getVertices
-        );
-
-        luaSceneLoader.new_usertype<lua::LuaScene>("Scene",
-            "getModels",
-            &lua::LuaScene::getModels,
-            "loadIntoWorld",
-            &lua::LuaScene::loadIntoWorld
-        );
-
-
-        luaSceneLoader["load"] = [&](std::string path) {
-            FISH_ASSERTF(assets.isFile(path), "Scene asset {} does not exist", path);
-
-            return lua::LuaScene(sceneLoader.load(path), sceneLoader, luaState);
-        };
     }
 
     void LuaService::initMath()
     {
-        auto luaMath = luaState["Math"].get_or_create<sol::table>();
-        luaMath.new_usertype<lua::LuaVec3<true>>("Vec3Ref",
-            "getX",
-            &lua::LuaVec3<true>::getX,
-            "getY",
-            &lua::LuaVec3<true>::getY,
-            "getZ",
-            &lua::LuaVec3<true>::getZ,
-            "setX",
-            &lua::LuaVec3<true>::setX,
-            "setY",
-            &lua::LuaVec3<true>::setY,
-            "setZ",
-            &lua::LuaVec3<true>::setZ
+        luaState.new_usertype<glm::vec3>("Vec3",
+            "x",
+            &glm::vec3::x,
+            "y",
+            &glm::vec3::y,
+            "z",
+            &glm::vec3::z
         );
 
-        luaMath.new_usertype<lua::LuaVec3<false>>("Vec3",
-            "getX",
-            &lua::LuaVec3<false>::getX,
-            "getY",
-            &lua::LuaVec3<false>::getY,
-            "getZ",
-            &lua::LuaVec3<false>::getZ,
-            "setX",
-            &lua::LuaVec3<false>::setX,
-            "setY",
-            &lua::LuaVec3<false>::setY,
-            "setZ",
-            &lua::LuaVec3<false>::setZ
-        );
-
-        luaMath.new_usertype<lua::LuaVertex>("Vertex",
-            "getPosition",
-            &lua::LuaVertex::getPosition
+        luaState.new_usertype<glm::quat>("Quaternion",
+            "x",
+            &glm::quat::x,
+            "y",
+            &glm::quat::y,
+            "z",
+            &glm::quat::z,
+            "w",
+            &glm::quat::w
         );
     }
+
     void LuaService::initConsole()
     {
         auto& console = this->services.getService<Console>();
@@ -271,4 +243,14 @@ namespace fish
         };
     }
 
+    void LuaService::initComponents()
+    {
+        luaState.new_usertype<Camera3D>("Camera3D",
+            sol::default_constructor,
+            "fov",
+            &Camera3D::fov,
+            "zNear",
+            &Camera3D::zNear
+        );
+    }
 }

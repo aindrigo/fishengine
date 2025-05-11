@@ -33,6 +33,7 @@ namespace fish
         void setCamera(entt::entity entity);
 
         bool isValid(entt::entity entity);
+        entt::entity getParent(entt::entity parent);
         void setParent(entt::entity entity, entt::entity parent = entt::null);
 
         entt::entity create(entt::entity parent = entt::null);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "fish/assets.hpp"
-#include "lua/luaworld.hpp"
 #include <filesystem>
 #include <sol/forward.hpp>
 #include <sol/lua_value.hpp>
@@ -35,11 +34,11 @@ namespace fish
         void initSceneLoader();
         void initMath();
         void initImGui();
-
+        void initComponents();
+        
         Services& services;
         Assets& assets;
         std::unordered_map<std::string, std::vector<sol::protected_function>> luaEvents;
-        lua::LuaWorld luaWorld;
         sol::state luaState;
     };
 }

@@ -1,2 +1,2 @@
-local scene = SceneLoader.load("models/gome.obj")
-scene:loadIntoWorld()
+
+local world = World.get()
