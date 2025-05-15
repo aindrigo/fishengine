@@ -89,7 +89,7 @@
         {
             "name": "x86-debug-vs22",
             "displayName": "Windows (x86, debug, VS2022)",
-            "inherits": [ "base-windows", "base-x86", "base-debug", "base-vs22" ],
+            "inherits": [ "base-windows", "base-x86", "base-debug", "base-vs22" ]
         },
         {
             "name": "x64-debug-vs22",
