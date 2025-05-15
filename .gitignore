@@ -14,5 +14,6 @@ imgui.ini
 /bin
 /out
 /.vscode
+/.vs
 /vendor/steamworks/bin
 /vendor/steamworks/public

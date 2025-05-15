@@ -45,7 +45,10 @@
         {
             "name": "base-vs22",
             "hidden": true,
-            "generator": "Visual Studio 17 2022"
+            "generator": "Visual Studio 17 2022",
+            "cacheVariables": {
+                "CMAKE_GENERATOR_TOOLSET": "ClangCL"
+            }
         },
         {
             "name": "base-x64",
@@ -80,8 +83,18 @@
         },
         {
             "name": "x64-release-msys2",
-            "displayName": "Windows (x64, release, VS2022)",
+            "displayName": "Windows (x64, release, MSYS2)",
             "inherits": [ "base-windows", "base-x64", "base-release", "base-msys2" ]
+        },
+        {
+            "name": "x86-debug-vs22",
+            "displayName": "Windows (x86, debug, VS2022)",
+            "inherits": [ "base-windows", "base-x86", "base-debug", "base-vs22" ],
+        },
+        {
+            "name": "x64-debug-vs22",
+            "displayName": "Windows (x64, debug, VS2022)",
+            "inherits": [ "base-windows", "base-x64", "base-debug", "base-vs22" ]
         },
         {
             "name": "x86-release-vs22",

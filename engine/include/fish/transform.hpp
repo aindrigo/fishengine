@@ -67,7 +67,9 @@ namespace fish
                 case AlignmentMode::CENTER:
                     return { position - size * 0.5f, position + size * 0.5f };
                 case AlignmentMode::TOP_LEFT:
-                    return {position, position + size};
+                    return { position, position + size };
+                default:
+                    return { glm::vec2(0.0f), glm::vec2(0.0f) };
             }
         }
         

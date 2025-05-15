@@ -9,6 +9,7 @@
 #include <thread>
 #include <unordered_map>
 #include <vector>
+#include <optional>
 namespace fish
 {
     typedef void ConsoleCommand(const std::set<std::string>& args);

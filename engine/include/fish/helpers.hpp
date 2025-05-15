@@ -197,7 +197,7 @@ namespace fish::helpers
             StringDelimiterResult result;
             result.success = true;
 
-            bool found;
+            bool found = false;
             for (size_t i = 0; i < str.size(); i++) {
                 char c = str[i];
 
