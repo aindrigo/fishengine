@@ -245,12 +245,15 @@ namespace fish
 
     void LuaService::initComponents()
     {
-        luaState.new_usertype<Camera3D>("Camera3D",
-            sol::default_constructor,
-            "fov",
-            &Camera3D::fov,
-            "zNear",
-            &Camera3D::zNear
-        );
+        {
+            sol::constructors<Camera3D(float, float)> ctor = {};
+            luaState.new_usertype<Camera3D>("Camera3D",
+                ctor,
+                "fov",
+                &Camera3D::fov,
+                "zNear",
+                &Camera3D::zNear
+            );
+        }
     }
 }
