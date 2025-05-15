@@ -38,8 +38,8 @@
             "hidden": true,
             "generator": "Ninja",
             "cacheVariables": {
-                "CMAKE_C_COMPILER": "clang",
-                "CMAKE_CXX_COMPILER": "clang++"
+                "CMAKE_C_COMPILER": "gcc",
+                "CMAKE_CXX_COMPILER": "g++"
             }
         },
         {
@@ -78,7 +78,7 @@
         },
         {
             "name": "x86-release-msys2",
-            "displayName": "Windows (x86, release, VS2022)",
+            "displayName": "Windows (x86, release, )",
             "inherits": [ "base-windows", "base-x86", "base-release", "base-msys2" ]
         },
         {
